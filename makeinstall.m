@@ -77,6 +77,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.6  2004/11/10 07:52:15  marwan
+% CVS compatibility included
+%
 % Revision 3.5  2004/11/10 06:29:16  marwan
 % Initial commitment
 %
@@ -927,17 +930,18 @@ if restart, makeinstall(varargin{:}), end
 %#     TBfullpath=fullfile(toolboxroot,toolboxpath);
 %#     if ~exist(TBfullpath), err=mkdir(toolboxroot,toolboxpath); end
 %#
-%#     in = input(['> Add toolbox permanently into your startup path (highly recommended)? Y/T/N [Y]: '],'s');
+%#     disp(['> In order to get permanent access, the toolbox shoul be added',10,'> to the top (default) or end of your startup path.'])
+%#     in = input(['> Add toolbox permanently into your startup path (highly recommended)? Y/E/N [Y]: '],'s');
 %#     if isempty(in), in = 'Y'; end
 %#     if strcmpi('Y',in)
-%#       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -end']};
-%#       disp('  Adding Toolbox at the end of the startup.m file')
-%#     elseif strcmpi('T',in)
 %#       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -begin']};
+%#       disp('  Adding Toolbox at the end of the startup.m file')
+%#     elseif strcmpi('E',in)
+%#       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -end']};
 %#       disp('  Adding Toolbox at the top of the startup.m file')
 %#     end
 %#
-%#     if strcmpi('Y',in) | strcmpi('T',in)
+%#     if strcmpi('Y',in) | strcmpi('E',in)
 %#       errcode=95.4;
 %#       fid=fopen(startupfile,'w');
 %#       if fid < 0
