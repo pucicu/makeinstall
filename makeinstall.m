@@ -77,6 +77,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.5  2004/11/10 06:29:16  marwan
+% Initial commitment
+%
 %
 
 % initialization some variables
@@ -474,12 +477,12 @@ if fid>0
                            disp('   ** TOO MUCH WARNINGS!') 
                            disp('   I give up! Following warning messages will be suppressed.') 
                          end
-	                 if count_warnings < max_warnings
-                           disp(['   ** Warning: ', files.classes{i}, ' method ',char(gk_fname),' does not have a valid helptext. Please refer ',char(10),'   the Matlab manual for the correct structure of M-files.'])
+	                     if count_warnings < max_warnings
+                               disp(['   ** Warning: ', files.classes{i}, ' method ',char(gk_fname),' does not have a valid helptext. Please refer ',char(10),'   the Matlab manual for the correct structure of M-files.'])
                          end
-	                 count_warnings = count_warnings + 1;
-			 fnname=lower(strtok(char(gk_fname),'.'));
-                      end
+	                     count_warnings = count_warnings + 1;
+			             fnname=lower(strtok(char(gk_fname),'.'));
+                     end
                      line=[lower(fnname),blanks(size(char(files.m),2)-length(fnname)-1),'- ',helpstring];
                      fprintf(fid,'%s\n',['%    ', line]);
                  end
@@ -521,16 +524,28 @@ if fid>0
     [temp1 temp]=strtok(temp,':');
     if ~isempty(temp1)
       dirnames=[dirnames; {temp1}];
-      x2=dir(temp1);
-      for i=1:length(x2)
-        if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
-	if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
+      temp2=strrep(temp1,'./','');
+      if isempty(findstr(lower(fliplr(temp2(end-min([3,length(temp2)])+1:end))), 'svc'))
+        x2=dir(temp1);
+        for i=1:length(x2)
+          if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
+          if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
+        end
       end
     end
   end
   dirnames=strrep(dirnames,filesep,'/');
   dirnames=strrep(dirnames,'./','');
   filenames=strrep(filenames,'./','');
+  
+  % ignore CVS folders
+  remove = [];
+  for i=1:length(dirnames)
+      test_string = fliplr(dirnames{i});
+      if strcmpi(test_string(1:min([3,length(test_string)])),'SVC'), remove = [remove; i]; end
+  end
+  dirnames(remove) = [];
+  
 
   i=1;
   while i<=length(filenames)
@@ -639,7 +654,7 @@ else
     err=fprintf(fid,'%s\n',['install_dirUNIX=''',toolbox_name,''';   % the folder where the toolbox files will be extracted (UNIX)']);
     err=fprintf(fid,'%s\n',['install_dirPC=install_dirUNIX;          % the folder where the toolbox files will be extracted (PC)']);
     err=fprintf(fid,'%s\n\n',['src_dir=''',pwd,'''; % folder with the origin toolbox']);
-    err=fprintf(fid,'%s\n',['version_file='''';                      % include in this file a line like this: % Version: Number']);
+    err=fprintf(fid,'%s\n',['version_file='''';                      % include in this file a line like this: % $Revision$']);
     err=fprintf(fid,'%s\n',['version_number='''';                    % or put the version number in this variable']);
     err=fprintf(fid,'%s\n',['release='''';                           % the release number']);
     err=fprintf(fid,'%s\n\n',['infostring='''';                        % further information displayed during installation']);
