@@ -52,7 +52,7 @@ function makeinstall(varargin)
 %   MAKEINSTALL GPL.
 
 % FREE SOFTWARE - please refer the source
-% Copyright (c) 2002-2004 by AMRON
+% Copyright (c) 2002-2005 by AMRON
 % Norbert Marwan, Potsdam University, Germany
 % http://www.agnld.uni-potsdam.de
 %
@@ -77,6 +77,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.7  2004/11/15 10:09:49  marwan
+% change addpath -end to addpath -begin
+%
 % Revision 3.6  2004/11/10 07:52:15  marwan
 % CVS compatibility included
 %
@@ -695,7 +698,7 @@ if restart, makeinstall(varargin{:}), end
 %#%    the MAKEINSTALL tool. For further information
 %#%    visit http://matlab.pucicu.de
 %#
-%#% Copyright (c) 2001-2004 by AMRON
+%#% Copyright (c) 2001-2005 by AMRON
 %#% Norbert Marwan, Potsdam University, Germany
 %#% http://www.agnld.uni-potsdam.de
 %#%
@@ -801,13 +804,14 @@ if restart, makeinstall(varargin{:}), end
 %#             errcode=94.1;
 %#             if ~isunix
 %#               toolboxroot=fullfile(matlabroot,'toolbox');
+%#               curr_pwd = pwd; home_pwd = matlabroot; 
 %#             else
 %#               toolboxroot=startuppath;
+%#               curr_pwd = pwd; cd ('~'); home_pwd = pwd; cd(curr_pwd);
 %#             end
 %#             instpaths=textread(startupfile,'%[^\n]');
 %#             instpaths_old=instpaths;
 %#             k=1;
-%#             curr_pwd = pwd; cd ('~'); home_pwd = pwd; cd(curr_pwd);
 %#             while k<=length(instpaths)
 %#               if findstr(oldtoolboxpath,strrep(instpaths{k},'~',home_pwd))
 %#                 errcode=94.2;
