@@ -38,7 +38,7 @@ function makeinstall(varargin)
 %   line and a following help text. The H1 line is used also 
 %   by other functions like LOOKFOR. If you like to generate 
 %   CONTENTS.M automatically with MAKEINSTALL although 
-%   CONTENTS.M already exists, you have  to remove the old 
+%   CONTENTS.M already exists, you have to remove the old 
 %   CONTENTS.M file. Thus, manual modifications will be kept.
 %
 %   The contents of INFO.XML can be modified with some 
@@ -77,6 +77,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.8  2005/02/22 12:27:14  marwan
+% windoof bug fixed (ocurred during removing of old toolbox)
+%
 % Revision 3.7  2004/11/15 10:09:49  marwan
 % change addpath -end to addpath -begin
 %
@@ -116,7 +119,7 @@ elseif nargin==2
 end
 
 % get version number of the makeinstall-script
-mi_file=which('makeinstall.m');
+mi_file=[mfilename('fullpath'), '.m'];
 mi_version='none';
 fid=fopen(mi_file,'r');
 if fid~=-1
@@ -255,7 +258,7 @@ if fid>0
 
   % make install file
     disp('   Reading the install source code')
-    fid=fopen('makeinstall.m','r');warning off
+    fid=fopen(mi_file, 'r'); warning off
     i=1; flag=0;
     while 1
        temp=fgetl(fid);
@@ -271,37 +274,37 @@ if fid>0
 	   flag=0; i=1;
 	 end
 	 
-         if findstr(temp(1:2),'%#')==1
+         if findstr(temp(1:2),'%@')==1
            aline=repmat('-',1,length(toolbox_name)+17);
-	   switch flag
-	   case 1
-% read install part
-             b(i,1)={temp(3:end)};
-	     b(i)=strrep(b(i),'$lines$',aline);
-	     b(i)=strrep(b(i),'$installpath$',install_path);
-	     b(i)=strrep(b(i),'$toolboxdirpc$',install_dirPC);
-	     b(i)=strrep(b(i),'$toolboxdirunix$',install_dirUNIX);
-	     b(i)=strrep(b(i),'$toolboxname$',toolbox_name);
-%	     b(i)=strrep(b(i),'$install_file$',install_file);
-	     b(i)=strrep(b(i),'$generation_date$',time_string);
-	     b(i)=strrep(b(i),'$check_for_old$',check_for_old);
-	     b(i)=strrep(b(i),'$mi_version$',mi_version);
-	     if isempty(infostring)
-	        b(i)=strrep(b(i),'$infostring$','');
-	     else
-	        b(i)=strrep(b(i),'$infostring$',['disp(''',infostring,''')']);
-	     end
-	   case 2
-% read uninstall part
-             c(i,1)={temp(3:end)};
-	     c(i)=strrep(c(i),'$lines$',aline);
-	     c(i)=strrep(c(i),'$toolboxdir$',install_dirPC);
-	     c(i)=strrep(c(i),'$toolboxname$',toolbox_name);
-	     c(i)=strrep(c(i),'$deinstall_file$',strtok(deinstall_file,'.'));
-	     c(i)=strrep(c(i),'$deinstall_file_up$',strtok(upper(deinstall_file),'.'));
-	     c(i)=strrep(c(i),'$generation_date$',time_string);
-           end
-	   i=i+1;
+	       switch flag
+	       case 1
+    % read install part
+                 b(i,1)={temp(3:end)};
+	             b(i)=strrep(b(i),'$lines$',aline);
+	             b(i)=strrep(b(i),'$installpath$',install_path);
+	             b(i)=strrep(b(i),'$toolboxdirpc$',install_dirPC);
+	             b(i)=strrep(b(i),'$toolboxdirunix$',install_dirUNIX);
+	             b(i)=strrep(b(i),'$toolboxname$',toolbox_name);
+        %	     b(i)=strrep(b(i),'$install_file$',install_file);
+	             b(i)=strrep(b(i),'$generation_date$',time_string);
+	             b(i)=strrep(b(i),'$check_for_old$',check_for_old);
+	             b(i)=strrep(b(i),'$mi_version$',mi_version);
+	             if isempty(infostring)
+	                b(i)=strrep(b(i),'$infostring$','');
+	             else
+	                b(i)=strrep(b(i),'$infostring$',['disp(''',infostring,''')']);
+	             end
+	       case 2
+    % read uninstall part
+                 c(i,1)={temp(3:end)};
+	             c(i)=strrep(c(i),'$lines$',aline);
+	             c(i)=strrep(c(i),'$toolboxdir$',install_dirPC);
+	             c(i)=strrep(c(i),'$toolboxname$',toolbox_name);
+	             c(i)=strrep(c(i),'$deinstall_file$',strtok(deinstall_file,'.'));
+	             c(i)=strrep(c(i),'$deinstall_file_up$',strtok(upper(deinstall_file),'.'));
+	             c(i)=strrep(c(i),'$generation_date$',time_string);
+             end
+	         i=i+1;
          end
        end
     end
@@ -548,15 +551,17 @@ if fid>0
   remove = [];
   for i=1:length(dirnames)
       test_string = fliplr(dirnames{i});
-      if strcmpi(test_string(1:min([3,length(test_string)])),'SVC'), remove = [remove; i]; end
+      if strcmpi(test_string(1:min([3,length(test_string)])),fliplr('CVS')), remove = [remove; i]; end
   end
   dirnames(remove) = [];
   
 
+  % ignore makeinstall.rc and .cvsignore
   i=1;
   while i<=length(filenames)
     if strncmpi('p.',fliplr(filenames{i}),2), filenames(i)=[]; i=i-1; end
     if strcmpi('makeinstall.rc',filenames{i}), filenames(i)=[]; i=i-1; end
+    if strcmpi('.cvsignore',filenames{i}), filenames(i)=[]; i=i-1; end
     i=i+1;
   end
   
@@ -588,12 +593,12 @@ if fid>0
 
       c=[c, ['%<-- ASCII begins here: __',char(filenames{i}),'__ -->'], 10];
       in=char(fread(fid,'char')');
-      in=strrep(in,char(10),[char(10),'%#']);
+      in=strrep(in,char(10),[char(10),'%@']);
 %      while 1
 %         temp=fgetl(fid);
 %         if ~ischar(temp), break
 %         else
-           c=[c, ['%#',in],10];
+           c=[c, ['%@',in],10];
 %         end
 %      end
       c=[c, '%<-- ASCII ends here -->', 10];
@@ -629,9 +634,9 @@ if fid>0
   err=fprintf(fid,'%s\n',['% -------------------------------------------']);
   err=fprintf(fid,'%s\n',['% GENERATED ENTRIES - DO NOT MODIFY ANYTHING!']);
   err=fprintf(fid,'%s\n',['%<-- Header begins here -->']);
-  err=fprintf(fid,'%s\n',['%#',checksum]);
-  err=fprintf(fid,'%s\n',['%#',time_string]);
-  err=fprintf(fid,'%s\n',['%#',version_number, release]);
+  err=fprintf(fid,'%s\n',['%@',checksum]);
+  err=fprintf(fid,'%s\n',['%@',time_string]);
+  err=fprintf(fid,'%s\n',['%@',version_number, release]);
   err=fprintf(fid,'%s\n',['%<-- Header ends here -->']);
   err=fwrite(fid,c); 
   err=fclose(fid);
@@ -686,773 +691,811 @@ if restart, makeinstall(varargin{:}), end
 % --------------------------------
 % GENERATED ENTRIES - DO NOT EDIT!
 %<-- ASCII begins here: install -->
-%#function aout=install(varargin);
-%#% INSTALL   Install script for $toolboxname$.
-%#%    INSTALL creates the $toolboxname$ folder and (optionally) 
-%#%    the needed entries in the startup.m file.
-%#% 
-%#%    INSTALL PATH creates the $toolboxname$ folder 
-%#%    in the specified PATH.
-%#%    
-%#%    This installation script was generated by using 
-%#%    the MAKEINSTALL tool. For further information
-%#%    visit http://matlab.pucicu.de
-%#
-%#% Copyright (c) 2001-2005 by AMRON
-%#% Norbert Marwan, Potsdam University, Germany
-%#% http://www.agnld.uni-potsdam.de
-%#%
-%#% THIS IS A GENERATED INSTALL-FILE, DO NOT EDIT!
-%#% Generation date: $generation_date$
-%#% $Date$
-%#% $Revision$
-%#
-%#
-%#install_file='';install_path='$installpath$';installfile_info.date='';installfile_info.bytes=[];
-%#time_stamp='';checksum='';checksum_file='';
-%#errcode=0;
-%#
-%#try
-%#  warning('off')
-%#  if nargin
-%#    install_path = varargin{1};
-%#  end
-%#
-%#  if exist('install.log')==2, delete('install.log'), end
-%#  %rehash
-%#  disp('$lines$')
-%#  disp('  INSTALLATION $toolboxname$');
-%#  disp('$lines$')
-%#  install_file=[mfilename,'.m'];
-%#  currentpath=pwd; time_stamp='time_stamp not yet obtained'; checksum='checksum not yet obtained';
-%#  
-%#%%%%%%% read the archive
-%#%%%%%%% and look for checksum and date in archive
-%#  errcode=90;
-%#  disp('  Reading the archiv ')
-%#  fid=fopen(install_file,'r'); 
-%#  fseek(fid,0,'eof'); eofbyte=ftell(fid);
-%#  fseek(fid,$startbyte$,'bof');
-%#  while 1
-%#     temp=fgetl(fid);
-%#     startbyte=ftell(fid);
-%#     if length(temp)>1
-%#       if strcmpi(temp,'%<-- Header begins here -->')
-%#          errcode=90.1;
-%#          checksum=fgetl(fid);
-%#          temp1=fgetl(fid);
-%#          temp2=fgetl(fid);
-%#       end
-%#       if strcmpi(temp,'%<-- Header ends here -->')
-%#          startbyte=ftell(fid);
-%#          break
-%#       end
-%#     end
-%#  end
-%#  checksum(1:2)=[];
-%#  fseek(fid,startbyte,'bof');
-%#  errcode=90.2;
-%#  A=fread(fid,eofbyte,'char');
-%#  errcode=90.3;
-%#  checksum_file=dec2hex(sum((1:length(A))'.*A));
-%#  if ~strcmpi(checksum_file,checksum)
-%#    error(['The installation file is corrupt!',10,'Ensure that the archive container was ',...
-%#           'not modified (check FTP/ ',10,'proxy/ firewall settings, anti-virus scanner for emails etc.)!'])
-%#  else
-%#    disp(['  Checksum test passed (', checksum,')'])
-%#  end
-%#  fclose(fid);
-%#
-%#  disp(['  $toolboxname$ version ', temp2(3:end),''])
-%#  time_stamp=temp1(3:end); disp(['  $toolboxname$ time stamp ', time_stamp,'']); 
-%#  
-%#  errcode=91;
-%#  if isunix
-%#    toolboxpath='$toolboxdirunix$';
-%#  else
-%#    toolboxpath='$toolboxdirpc$';
-%#  end
-%#  
-%#  
-%#%%%%%%% check for older versions
-%#  
-%#  p=path; i1=0;
-%#  
-%#  while $check_for_old$>i1;
-%#    errcode=92;
-%#    i1=$check_for_old$;
-%#    if ~isempty(i1)
-%#      i1=i1(1);
-%#      if isunix, i2=findstr(':',p); else, i2=findstr(';',p); end
-%#      i3=i2(i2>i1);                 % last index pathname
-%#      if ~isempty(i3), i3=i3(1)-1; else, i3=length(p); end
-%#      i4=i2(i2<i1);                 % first index pathname
-%#      if ~isempty(i4), i4=i4(end)+1; else, i4=1; end
-%#      oldtoolboxpath=p(i4:i3);
-%#      disp(['  Old $toolboxname$ found in ', oldtoolboxpath,''])
-%#      rem_old = input('> Delete old toolbox? Y/N [Y]: ','s');
-%#      if isempty(rem_old), rem_old = 'Y'; end
-%#      if strcmpi('Y',rem_old)
-%#%%%%%%% removing old entries in startup-file
-%#        errcode=94;
-%#        rmpath(oldtoolboxpath)
-%#        if i4>1, p(i4-1:i3)=''; else, p(i4:i3)=''; end
-%#        startup_exist = exist('startup');
-%#        if startup_exist
-%#             startupfile=which('startup');
-%#             startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
-%#             errcode=94.1;
-%#             if ~isunix
-%#               toolboxroot=fullfile(matlabroot,'toolbox');
-%#               curr_pwd = pwd; home_pwd = matlabroot; 
-%#             else
-%#               toolboxroot=startuppath;
-%#               curr_pwd = pwd; cd ('~'); home_pwd = pwd; cd(curr_pwd);
-%#             end
-%#             instpaths=textread(startupfile,'%[^\n]');
-%#             instpaths_old=instpaths;
-%#             k=1;
-%#             while k<=length(instpaths)
-%#               if findstr(oldtoolboxpath,strrep(instpaths{k},'~',home_pwd))
-%#                 errcode=94.2;
-%#                 instpaths(k)=[];
-%#               else
-%#                 k=k+1;
-%#               end
-%#             end
-%#             fid=fopen(startupfile,'w');
-%#             errcode=94.3;
-%#             if fid < 0
-%#               disp(['  ** Warning: Could not get access to ',startupfile,'.']);
-%#               disp(['  ** Could not remove toolbox from the startup.m file.']);
-%#               disp(['  ** Ensure that you have write access!']);
-%#             else
-%#               for i2=1:length(instpaths), 
-%#                 err=fprintf(fid,'%s\n', char(instpaths{i2})); 
-%#               end
-%#               err=fclose(fid);
-%#             end
-%#        end
-%#%%%%%%% removing old paths
-%#        errcode=93;
-%#        if exist(oldtoolboxpath)==7
-%#           disp(['  Change to ',oldtoolboxpath,''])
-%#           cd(oldtoolboxpath)
-%#           dirnames='';filenames='';
-%#           temp='.:';
-%#           while ~isempty(temp)
-%#             [temp1 temp]=strtok(temp,':');
-%#             if ~isempty(temp1)
-%#               dirnames=[dirnames; {temp1}];
-%#               x2=dir(temp1);
-%#               for i=1:length(x2)
-%#                 if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
-%#         	   if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
-%#               end
-%#             end
-%#           end
-%#           dirnames=strrep(dirnames,['.',filesep],'');
-%#           for i=1:length(dirnames),l(i)=length(dirnames{i});;end
-%#           [i i4]=sort(l);
-%#           dirnames=dirnames(fliplr(i4));
-%#           for i=1:length(dirnames)
-%#              delete([dirnames{i}, filesep,'*']),
-%#              delete(dirnames{i}),
-%#              disp(['  Removing files in ',char(dirnames{i}),''])
-%#           end
-%#           cd(currentpath)
-%#           delete(oldtoolboxpath)
-%#           disp(['  Removing ',oldtoolboxpath,''])
-%#        end
-%#%%%%%%%
-%#      end
-%#    end
-%#  end
-%#  clear p i i1 i2 i3 i4 temp* x2
-%#  
-%#%%%%%%% add entry into startpath in startup.m
-%#  i=findstr(toolboxpath,path);
-%#  if isempty(i)
-%#     errcode=95;
-%#     if exist('startup')
-%#        errcode=95.1;
-%#        startupfile=which('startup');
-%#        startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
-%#  
-%#        if ~isunix
-%#           errcode=95.11;
-%#           toolboxroot=fullfile(matlabroot,'toolbox');
-%#        else
-%#           errcode=95.12;
-%#           toolboxroot=startuppath;
-%#        end
-%#        instpaths=textread(startupfile,'%[^\n]');
-%#  
-%#     else
-%#        errcode=95.2;
-%#        if ~isunix
-%#           errcode=95.21;
-%#           startupfile=fullfile(matlabroot,'toolbox','local','startup.m');
-%#  	   toolboxroot=fullfile(matlabroot,'toolbox');
-%#  	   instpaths={''};
-%#        else
-%#           errcode=95.22;
-%#           cd ~
-%#           if exist('matlab')~=7, mkdir matlab, end
-%#           cd matlab
-%#   	   startuppath=[pwd,'/'];
-%#  	   startupfile=[startuppath,'startup.m'];
-%#  	   toolboxroot=startuppath;
-%#  	   instpaths={''};
-%#        end
-%#     end
-%#    
-%#        errcode=95.21;
-%#        if ~isempty(install_path)
-%#           switch ( exist(install_path) )
-%#              case 0
-%#                in = input(['> Create ', install_path, '? Y/N [Y]: '],'s');
-%#                if isempty(in), in = 'Y'; end
-%#                if strcmpi('Y',in)
-%#                   err = mkdir(install_path);
-%#                   if ~err
-%#                     disp(['  ** Could not create ', install_path, '! Using ',startuppath,' as installation path.'])
-%#                   else                
-%#                     toolboxroot = install_path;
-%#                   end                
-%#                else 
-%#                   disp(['  ** Do not create ', install_path, '! Using ',startuppath,' as installation path.'])
-%#                end
-%#              case 2
-%#                disp(['  ** ', install_path, ' is not a directory! Using ',startuppath,' as installation path.'])
-%#              case 7
-%#                toolboxroot = install_path;
-%#           end
-%#        end
-%#
-%#     errcode=95.3;
-%#     TBfullpath=fullfile(toolboxroot,toolboxpath);
-%#     if ~exist(TBfullpath), err=mkdir(toolboxroot,toolboxpath); end
-%#
-%#     disp(['> In order to get permanent access, the toolbox shoul be added',10,'> to the top (default) or end of your startup path.'])
-%#     in = input(['> Add toolbox permanently into your startup path (highly recommended)? Y/E/N [Y]: '],'s');
-%#     if isempty(in), in = 'Y'; end
-%#     if strcmpi('Y',in)
-%#       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -begin']};
-%#       disp('  Adding Toolbox at the end of the startup.m file')
-%#     elseif strcmpi('E',in)
-%#       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -end']};
-%#       disp('  Adding Toolbox at the top of the startup.m file')
-%#     end
-%#
-%#     if strcmpi('Y',in) | strcmpi('E',in)
-%#       errcode=95.4;
-%#       fid=fopen(startupfile,'w');
-%#       if fid < 0
-%#         disp(['  ** Warning: Could not get access to ',startupfile,'.']);
-%#         disp(['  ** Could not add toolbox into the startup.m file.']);
-%#         disp(['  ** Ensure that you have write access!']);
-%#       else
-%#         for i2=1:length(instpaths), err=fprintf(fid,'%s\n', char(instpaths{i2}));end
-%#         err=fclose(fid);
-%#       end
-%#     end
-%#
-%#  else
-%#     errcode=96;
-%#     startupfile=which('startup');
-%#     startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
-%#     if ~isunix
-%#        toolboxroot=fullfile(matlabroot,'toolbox');
-%#     else
-%#        toolboxroot=startuppath;
-%#     end
-%#    
-%#        errcode=96.21;
-%#        if ~isempty(install_path)
-%#           switch ( exist(install_path) )
-%#              case 0
-%#                disp(['> Create ', install_path, '?'])
-%#                in = input('> Create ', install_path, '? Y/N [Y]: ','s');
-%#                if isempty(in), in = 'Y'; end
-%#                if strcmpi('Y',in)
-%#                   err = mkdir(install_path);
-%#                   if ~err
-%#                     disp(['  ** Could not create ', install_path, '! Using ',startuppath,' as installation path.'])
-%#                   else                
-%#                     toolboxroot = install_path;
-%#                   end                
-%#                else 
-%#                   disp(['  ** Do not create ', install_path, '! Using ',startuppath,' as installation path.'])
-%#                end
-%#              case 2
-%#                disp(['  ** ', install_path, ' is not a directory! Using ',startuppath,' as installation path.'])
-%#              case 7
-%#                toolboxroot = install_path;
-%#           end
-%#        end
-%#     TBfullpath=fullfile(toolboxroot,toolboxpath);
-%#     if ~exist(TBfullpath), err=mkdir(toolboxroot,toolboxpath); end
-%#  end
-%#  
-%#  
-%#%%%%%%% read the archive
-%#  errcode=97;
-%#  fprintf('  Importing the archiv ')
-%#  cd(currentpath)
-%#  max_sc=30;
-%#  scale=[sprintf('%3.0f',0),'% |',repmat(' ',1,max_sc),'|'];
-%#  fprintf('%s',scale)
-%#  b=''; c.file=''; c.data=''; bfile=''; folder=''; i2=0;
-%#    
-%#    % read ASCII
-%#    errcode=97.1;
-%#    i1=findstr(char(A'),'%<-- ASCII begins here');
-%#    i2=findstr(char(A'),'%<-- ASCII ends here -->');
-%#    
-%#    for k=1:length(i1),
-%#      wb=round(i1(k)*max_sc/eofbyte);
-%#      errcode=97.11;
-%#      scale=[sprintf('%3.0f',100*wb/max_sc),'% |',repmat('*',1,wb),repmat(' ',1,max_sc-wb),'|'];
-%#      fprintf([repmat('\b',1,max_sc+7),'%s'],scale)
-%#      B=A(i1(k):i2(k)-2);
-%#     
-%#      i4=find(B==10);
-%#      i3=[0;i4(1:end-1)]+1;
-%#      filename=strrep(...
-%#                strrep(char(B(i3(1):i4(1)-1)'),'%<-- ASCII begins here: __',''),...
-%#  	      '__ -->','');
-%#      errcode=['97.1',reshape(dec2hex(double(filename))',1,length(filename)*2)];
-%#      i6=findstr(filename,'/');
-%#      if i6>0
-%#         folder=[folder; {filename(1:i6(end)-1)}];
-%#      end
-%#      c(k).file={filename};
-%#      c(k).data=strrep(char(B(i4(1)+3:end)'),[char(10),'%#'],char(10));;
-%#    end
-%#  
-%#    % read binary
-%#    errcode=97.2;
-%#    i1=findstr(char(A'),'%<-- Binary begins here');
-%#    i2=findstr(char(A'),'%<-- Binary ends here -->');
-%#    for k=1:length(i1),
-%#      wb=round(i1(k)*max_sc/eofbyte);
-%#      errcode=97.21;
-%#      scale=[sprintf('%3.0f',100*wb/max_sc),'% |',repmat('*',1,wb),repmat(' ',1,max_sc-wb),'|'];
-%#      fprintf([repmat('\b',1,max_sc+7),'%s'],scale)
-%#      B=A(i1(k):i2(k));
-%#  
-%#      i4=find(B==10);
-%#      i3=[0;i4(1:end-1)]+1;
-%#      i5=findstr(char(B(i3(1):i4(1))'),'__');
-%#      filename=char(B(i5(1)+2:i5(2)-1)');
-%#      errcode=['97.2',reshape(dec2hex(double(filename))',1,length(filename)*2)];
-%#      i6=findstr(filename,'/');
-%#      if i6>0
-%#  	folder=[folder; {filename(1:i6(end)-1)}];
-%#      end
-%#      bfile=[bfile; {filename}];
-%#      nbytes=str2num(char(B(i5(3)+2:i5(4)-1)'));
-%#      if nbytes>=2
-%#        temp=reshape(B(i4(1)+1:i4(1)+nbytes),2,nbytes/2);
-%#        b=[b;{temp(2,:)}];
-%#      else
-%#        b=[b;{''}];
-%#      end
-%#  
-%#    end
-%#    wb=max_sc;
-%#    scale=[sprintf('%3.0f',100*wb/max_sc),'% |',repmat('*',1,wb),repmat(' ',1,max_sc-wb),'|'];
-%#    fprintf([repmat('\b',1,max_sc+7),'%s'],scale)
-%#  fprintf('\n')
-%#  clear temp* i i1 i2 i3 i4 i5 i6 A B
-%#  
-%#  errcode='97.3';
-%#  cd(TBfullpath)
-%#  disp(['  Toolbox folder is ',TBfullpath,''])
-%#  
-%#%%%%%%% make sub-directories
-%#  errcode='97.4';
-%#  for i=1:length(folder);
-%#     i1=folder{i}; i2='.'; olddir=pwd;
-%#     if exist([TBfullpath, filesep, i1])~=7
-%#        while ~isempty(i2) & ~isempty(i1)
-%#          cd(i2)
-%#          [i2 i1]=strtok(i1,'/');
-%#          if exist([pwd, filesep, i2])~=7 & exist([pwd, filesep, i2])
-%#             disp(['  ** Warning: Found ', i2, ' will be overwritten.'])
-%#             errcode=['97.5',reshape(dec2hex(double(i2))',1,length(i2)*2)];
-%#             delete(i2)
-%#          end
-%#          if ~exist([pwd, filesep, i2])
-%#            disp(['  Make directory ',pwd, filesep, i2,''])
-%#            errcode=['97.6',reshape(dec2hex(double(i2))',1,length(i2)*2)];
-%#            mkdir(i2)
-%#          end
-%#        end
-%#        cd(olddir)
-%#     end
-%#  end
-%#
-%#%%%%%%% write the programme files
-%#  errcode=98;
-%#  num_errors=0;
-%#  for i=1:length(c),
-%#    disp(['  Creating ',char(c(i).file),''])
-%#    fid=fopen(char(c(i).file),'w');
-%#    if fid < 0
-%#       disp(['  ** Warning: Could not get access to ',char(c(i).file),'.']);
-%#       disp(['  ** Ensure that you have write access in this filesystem!']);
-%#       num_errors=num_errors+1;
-%#       if num_errors == 2; 
-%#         disp('Abort!')
-%#         disp('Too much errors due to write access failure in this filesystem.')
-%#         cd(currentpath), return
-%#       end
-%#    else
-%#      if strcmpi(c(i).file,'info.xml')
-%#        v=version;
-%#        release=str2num(v(findstr(v,'(R')+2:findstr(v,')')-1));
-%#        if release>12, area='toolbox'; icon_path='$toolbox/matlab/icons'; else area='matlab'; icon_path='$toolbox/matlab/general'; end
-%#        i3=findstr(c(i).data,'<matlabrelease>'); i4=findstr(c(i).data,'</matlabrelease>');
-%#        if ~isempty(i3) & i4>i3;
-%#          c(i).data=strrep(c(i).data,c(i).data(i3:i4-1),['<matlabrelease>',num2str(release)]);
-%#        end
-%#        i3=findstr(c(i).data,'<area>'); i4=findstr(c(i).data,'</area>');
-%#        if ~isempty(i3) & i4>i3;
-%#          c(i).data=strrep(c(i).data,c(i).data(i3:i4-1),['<area>',area]);
-%#        end
-%#        c(i).data=strrep(c(i).data,'<icon>$toolbox/matlab/general',['<icon>',icon_path]);
-%#        c(i).data=strrep(c(i).data,'<icon>$toolbox/matlab/icons',['<icon>',icon_path]);
-%#      end
-%#      err=fprintf(fid,'%s',char(c(i).data));
-%#      err=fclose(fid);
-%#    end
-%#  end
-%#
-%#%%%%%%% pcode the programme files
-%#  for i=1:length(c),
-%#    try
-%#      [tPath tFile tExt]=fileparts(char(c(i).file));
-%#      if strcmpi(tExt,'.m') & ~strcmpi(tFile,'Readme') & ~strcmpi(tFile,'Contents')
-%#        if mislocked(char(c(i).file)), munlock(char(c(i).file)); clear(char(c(i).file)); end
-%#        disp(['  Pcode ',char(c(i).file),''])
-%#        pcode(char(c(i).file),'-inplace')
-%#      end  
-%#    catch
-%#    end
-%#  end
-%#
-%#%%%%%%% write the binary files
-%#  num_errors=0;
-%#  for i=1:length(b),
-%#    disp(['  Creating ',char(bfile(i)),''])
-%#    fid=fopen(char(bfile(i)),'w');
-%#    if fid < 0
-%#       disp(['  ** Warning: Could not get access to ',char(bfile(i)),'.']);
-%#       disp(['  ** Ensure that you have write access in this filesystem!']);
-%#       num_errors=num_errors+1;
-%#       if num_errors == 2; 
-%#         disp('Abort!')
-%#         disp('Too much errors due to write access failure in this filesystem.')
-%#         cd(currentpath), return
-%#       end
-%#    else
-%#      err=fwrite(fid,b{i}); 
-%#      err=fclose(fid);
-%#    end
-%#  end
-%#  tx=version; tx=strtok(tx,'.'); 
-%#  if str2num(tx)>=5 & exist('rehash'), rehash, end
-%#  if str2num(tx)>=6 & exist('rehash'), eval('rehash toolboxcache'), end
-%#  
-%#%%%%%%% removing installation file
-%#  errcode=99;
-%#  cd(currentpath)
-%#  i = input('> Delete installation file? Y/N [Y]: ','s');
-%#  if isempty(i), i = 'Y'; end
-%#  
-%#  if strcmpi('Y',i)
-%#    disp('  Removing installation file')
-%#    delete(install_file)
-%#  end
-%#  
-%#%%%%%%% make toolbox accessible in the current matlab session
-%#  addpath(TBfullpath,'-end');
-%#  
-%#  disp('  Installation finished!')
-%#  
-%#  if ~exist('rehash')
-%#    disp('  ** Warning: Could not rehash your Matlab system.')
-%#    disp('  ** Probably a restart of Matlab will be necessary in order')
-%#    disp('  ** to get access to the installed toolbox.')
-%#  end
-%#  
-%#  disp('$lines$')
-%#  $infostring$
-%#  disp('For an overview type:')
-%#  disp(['helpwin ',toolboxpath])
-%#  warning('on')
-%#  
-%#  
-%#%%%%%%% error handling
-%#
-%#catch
-%#  z2=whos;x_lasterr=lasterr;y_lastwarn=lastwarn;
-%#  if ~strcmpi(x_lasterr,'Interrupt')
-%#    if fid>-1, 
-%#      try, z_ferror=ferror(fid); catch, z_ferror='No error in the installation I/O process.'; end
-%#    else
-%#      z_ferror='File not found.'; 
-%#    end
-%#    installfile_info=dir([currentpath,filesep,install_file]);
-%#    fid=fopen(fullfile(currentpath,'install.log'),'w');
-%#    checksum_test=findstr(x_lasterr,'The installation file is corrupt!');
-%#    if isempty(checksum_test),checksum_test=0; end
-%#    if ~checksum_test
-%#      err=fprintf(fid,'%s\n','This script is under development and your assistance is');
-%#      err=fprintf(fid,'%s\n','urgently welcome. Please inform the distributor of the');
-%#      err=fprintf(fid,'%s\n','toolbox, where the error occured and send us the following');
-%#      err=fprintf(fid,'%s\n','error report and the informations about the toolbox (distributor,');
-%#      err=fprintf(fid,'%s\n','name etc.). Provide a brief description of what you were');
-%#      err=fprintf(fid,'%s\n','doing when this problem occurred.');
-%#      err=fprintf(fid,'%s\n','E-mail or FAX this information to us at:');
-%#      err=fprintf(fid,'%s\n','    E-mail:  marwan@agnld.uni-potsdam.de');
-%#      err=fprintf(fid,'%s\n','       Fax:  ++49 +331 977 1142');
-%#      err=fprintf(fid,'%s\n\n\n','Thank you for your assistance.');
-%#      err=fprintf(fid,'%s\n',repmat('-',50,1));
-%#      err=fprintf(fid,'%s\n',datestr(now,0));
-%#      err=fprintf(fid,'%s\n',['Matlab ',char(version),' on ',computer]);
-%#      err=fprintf(fid,'%s\n',repmat('-',50,1));
-%#      err=fprintf(fid,'%s\n','Makeinstall Version ==> $mi_version$');
-%#      err=fprintf(fid,'%s\n',['Install File ==> ',install_file,'/',installfile_info.date,'/',num2str(installfile_info.bytes)]);
-%#      err=fprintf(fid,'%s\n',['Container ==> ',time_stamp,'/',checksum]);
-%#      err=fprintf(fid,'%s\n\n',repmat('-',50,1));
-%#      err=fprintf(fid,'%s\n',x_lasterr);
-%#      err=fprintf(fid,'%s\n',y_lastwarn);
-%#      err=fprintf(fid,'%s\n',z_ferror);
-%#      err=fprintf(fid,'%s\n',[' errorcode ==> ',num2str(errcode)]);
-%#      err=fprintf(fid,'%s\n',' workspace dump ==>');
-%#      if ~isempty(z2), 
-%#        err=fprintf(fid,'%s\n',['Name',char(9),'Size',char(9),'Bytes',char(9),'Class']);
-%#        for j=1:length(z2);
-%#          err=fprintf(fid,'%s',[z2(j).name,char(9),num2str(z2(j).size),char(9),num2str(z2(j).bytes),char(9),z2(j).class]);
-%#          if ~strcmp(z2(j).class,'cell') & ~strcmp(z2(j).class,'struct')
-%#            content=eval(z2(j).name);
-%#            content=mat2str(content(1:min([size(content,1),500]),1:min([size(content,2),500])));
-%#            err=fprintf(fid,'\t%s',content(1:min([length(content),500])));
-%#          elseif strcmp(z2(j).class,'cell')
-%#            content=eval(z2(j).name);
-%#            err=fprintf(fid,'\t');
-%#            for j2=1:min([length(content),500])
-%#              if isnumeric(content{j2})
-%#                err=fprintf(fid,'{%s} ',content{j2}(1:end));
-%#              elseif iscell(content{j2})
-%#                err=fprintf(fid,'{%s} ',content{j2}{1:end});
-%#              end
-%#            end
-%#          elseif strcmp(z2(j).class,'struct')
-%#            content=fieldnames(eval(z2(j).name));
-%#            content=char(content); content(:,end+1)=' '; content=content';
-%#            err=fprintf(fid,'\t%s',content(:)');
-%#          end
-%#          err=fprintf(fid,'%s\n','');
-%#        end
-%#      end
-%#    else
-%#      err=fprintf(fid,'%s\n','Installation aborted due to a failed checksum test!');
-%#      err=fprintf(fid,'%s\n',['Checksum should be:     ', checksum]);
-%#      err=fprintf(fid,'%s\n\n',['Checksum of archive is: ', checksum_file]);
-%#      err=fprintf(fid,'%s\n','Ensure that the installation file was not modified by any');
-%#      err=fprintf(fid,'%s\n','other programme, as an anti-virus scanner for emails or a');
-%#      err=fprintf(fid,'%s\n','mis-configured FTP programme.');
-%#    end
-%#    err=fclose(fid);
-%#    disp('----------------------------');
-%#    disp('       ERROR OCCURED ');
-%#    disp('    during installation');
-%#    disp('----------------------------');
-%#    disp(x_lasterr);
-%#    if ~checksum_test
-%#      disp(z_ferror);
-%#      disp(['   errorcode is ',num2str(errcode)]);
-%#      disp('----------------------------');
-%#      disp('   This script is under development and your assistance is ')
-%#      disp('   urgently welcome. Please inform the distributor of the')
-%#      disp('   toolbox, where the error occured and send us the error')
-%#      disp('   report and the informations about the toolbox (distributor,')
-%#      disp('   name etc.). For your convenience, this information has been')
-%#      disp('   recorded in: ')
-%#      disp(['   ',fullfile(currentpath,'install.log')]), disp(' ')
-%#      disp('   Provide a brief description of what you were doing when ')
-%#      disp('   this problem occurred.'), disp(' ')
-%#      disp('   E-mail or FAX this information to us at:')
-%#      disp('       E-mail:  marwan@agnld.uni-potsdam.de')
-%#      disp('          Fax:  ++49 +331 977 1142'), disp(' ')
-%#      disp('   Thank you for your assistance.')
-%#    end
-%#  end
-%#  warning('on')
-%#  cd(currentpath)
-%#end
+%@function aout=install(varargin);
+%@% INSTALL   Install script for $toolboxname$.
+%@%    INSTALL creates the $toolboxname$ folder and (optionally) 
+%@%    the needed entries in the startup.m file.
+%@% 
+%@%    INSTALL PATH creates the $toolboxname$ folder 
+%@%    in the specified PATH.
+%@%    
+%@%    This installation script was generated by using 
+%@%    the MAKEINSTALL tool. For further information
+%@%    visit http://matlab.pucicu.de
+%@
+%@% Copyright (c) 2001-2005 by AMRON
+%@% Norbert Marwan, Potsdam University, Germany
+%@% http://www.agnld.uni-potsdam.de
+%@%
+%@% THIS IS A GENERATED INSTALL-FILE, DO NOT EDIT!
+%@% Generation date: $generation_date$
+%@% $Date$
+%@% $Revision$
+%@
+%@install_file='';install_path='$installpath$';installfile_info.date='';installfile_info.bytes=[];
+%@time_stamp='';checksum='';checksum_file='';
+%@errcode=0;
+%@
+%@%try
+%@  warning('off')
+%@  if nargin
+%@    install_path = varargin{1};
+%@  end
+%@
+%@  if exist('install.log')==2, delete('install.log'), end
+%@  %rehash
+%@  disp('$lines$')
+%@  disp('  INSTALLATION $toolboxname$');
+%@  disp('$lines$')
+%@  install_file=[mfilename,'.m'];
+%@  currentpath=pwd; time_stamp='time_stamp not yet obtained'; checksum='checksum not yet obtained';
+%@  
+%@%%%%%%% read the archive
+%@%%%%%%% and look for checksum and date in archive
+%@  errcode=90;
+%@  disp('  Reading the archiv ')
+%@  fid=fopen(install_file,'r'); 
+%@  fseek(fid,0,'eof'); eofbyte=ftell(fid);
+%@  fseek(fid,$startbyte$,'bof');
+%@  while 1
+%@     temp=fgetl(fid);
+%@     startbyte=ftell(fid);
+%@     if length(temp)>1
+%@       if strcmpi(temp,'%<-- Header begins here -->')
+%@          errcode=90.1;
+%@          checksum=fgetl(fid);
+%@          temp1=fgetl(fid);
+%@          temp2=fgetl(fid);
+%@       end
+%@       if strcmpi(temp,'%<-- Header ends here -->')
+%@          startbyte=ftell(fid);
+%@          break
+%@       end
+%@     end
+%@  end
+%@  checksum(1:2)=[];
+%@  fseek(fid,startbyte,'bof');
+%@  errcode=90.2;
+%@  A=fread(fid,eofbyte,'char');
+%@  errcode=90.3;
+%@  checksum_file=dec2hex(sum((1:length(A))'.*A));
+%@  if ~strcmpi(checksum_file,checksum)
+%@    error(['The installation file is corrupt!',10,'Ensure that the archive container was ',...
+%@           'not modified (check FTP/ ',10,'proxy/ firewall settings, anti-virus scanner for emails etc.)!'])
+%@  else
+%@    disp(['  Checksum test passed (', checksum,')'])
+%@  end
+%@  fclose(fid);
+%@
+%@  disp(['  $toolboxname$ version ', temp2(3:end),''])
+%@  time_stamp=temp1(3:end); disp(['  $toolboxname$ time stamp ', time_stamp,'']); 
+%@  
+%@  errcode=91;
+%@  if isunix
+%@    toolboxpath='$toolboxdirunix$';
+%@  else
+%@    toolboxpath='$toolboxdirpc$';
+%@  end
+%@  
+%@  
+%@%%%%%%% check for older versions
+%@  
+%@  p=path; i1=0;
+%@  
+%@  while $check_for_old$>i1;
+%@    errcode=92;
+%@    i1=$check_for_old$;
+%@    if ~isempty(i1)
+%@      i1=i1(1);
+%@      if isunix, i2=findstr(':',p); else, i2=findstr(';',p); end
+%@      i3=i2(i2>i1);                 % last index pathname
+%@      if ~isempty(i3), i3=i3(1)-1; else, i3=length(p); end
+%@      i4=i2(i2<i1);                 % first index pathname
+%@      if ~isempty(i4), i4=i4(end)+1; else, i4=1; end
+%@      oldtoolboxpath=p(i4:i3);
+%@      disp(['  Old $toolboxname$ found in ', oldtoolboxpath,''])
+%@      rem_old = input('> Delete old toolbox? Y/N [Y]: ','s');
+%@      if isempty(rem_old), rem_old = 'Y'; end
+%@      if strcmpi('Y',rem_old)
+%@%%%%%%% removing old entries in startup-file
+%@        errcode=94;
+%@        rmpath(oldtoolboxpath)
+%@        if i4>1, p(i4-1:i3)=''; else, p(i4:i3)=''; end
+%@        startup_exist = exist('startup');
+%@        if startup_exist
+%@             startupfile=which('startup');
+%@             startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
+%@             errcode=94.1;
+%@             if ~isunix
+%@               toolboxroot=fullfile(matlabroot,'toolbox');
+%@               curr_pwd = pwd; home_pwd = matlabroot; 
+%@             else
+%@               toolboxroot=startuppath;
+%@               curr_pwd = pwd; cd ('~'); home_pwd = pwd; cd(curr_pwd);
+%@             end
+%@             instpaths=textread(startupfile,'%[^\n]');
+%@             instpaths_old=instpaths;
+%@             k=1;
+%@             while k<=length(instpaths)
+%@               if findstr(oldtoolboxpath,strrep(instpaths{k},'~',home_pwd))
+%@                 errcode=94.2;
+%@                 instpaths(k)=[];
+%@               else
+%@                 k=k+1;
+%@               end
+%@             end
+%@             fid=fopen(startupfile,'w');
+%@             errcode=94.3;
+%@             if fid < 0
+%@               disp(['  ** Warning: Could not get access to ',startupfile,'.']);
+%@               disp(['  ** Could not remove toolbox from the startup.m file.']);
+%@               disp(['  ** Ensure that you have write access!']);
+%@             else
+%@               for i2=1:length(instpaths), 
+%@                 err=fprintf(fid,'%s\n', char(instpaths{i2})); 
+%@               end
+%@               err=fclose(fid);
+%@             end
+%@        end
+%@%%%%%%% removing old paths
+%@        errcode=93;
+%@        if exist(oldtoolboxpath)==7
+%@           disp(['  Change to ',oldtoolboxpath,''])
+%@           cd(oldtoolboxpath)
+%@           dirnames='';filenames='';
+%@           temp='.:';
+%@           while ~isempty(temp)
+%@             [temp1 temp]=strtok(temp,':');
+%@             if ~isempty(temp1)
+%@               dirnames=[dirnames; {temp1}];
+%@               x2=dir(temp1);
+%@               for i=1:length(x2)
+%@                 if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
+%@         	   if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
+%@               end
+%@             end
+%@           end
+%@           dirnames=strrep(dirnames,['.',filesep],'');
+%@           for i=1:length(dirnames),l(i)=length(dirnames{i});;end
+%@           [i i4]=sort(l);
+%@           dirnames=dirnames(fliplr(i4));
+%@           for i=1:length(dirnames)
+%@              delete([dirnames{i}, filesep,'*']),
+%@              delete(dirnames{i}),
+%@              disp(['  Removing files in ',char(dirnames{i}),''])
+%@           end
+%@           cd(currentpath)
+%@           delete(oldtoolboxpath)
+%@           disp(['  Removing ',oldtoolboxpath,''])
+%@        end
+%@%%%%%%%
+%@      end
+%@    end
+%@  end
+%@  clear p i i1 i2 i3 i4 temp* x2
+%@  
+%@%%%%%%% add entry into startpath in startup.m
+%@  i=findstr(toolboxpath,path);
+%@  if isempty(i)
+%@     errcode=95;
+%@     if exist('startup')
+%@        errcode=95.1;
+%@        startupfile=which('startup');
+%@        startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
+%@  
+%@        if ~isunix
+%@           errcode=95.11;
+%@           toolboxroot=fullfile(matlabroot,'toolbox');
+%@        else
+%@           errcode=95.12;
+%@           toolboxroot=startuppath;
+%@        end
+%@        instpaths=textread(startupfile,'%[^\n]');
+%@  
+%@     else
+%@        errcode=95.2;
+%@        if ~isunix
+%@           errcode=95.21;
+%@           startupfile=fullfile(matlabroot,'toolbox','local','startup.m');
+%@  	   toolboxroot=fullfile(matlabroot,'toolbox');
+%@  	   instpaths={''};
+%@        else
+%@           errcode=95.22;
+%@           cd ~
+%@           if exist('matlab')~=7, mkdir matlab, end
+%@           cd matlab
+%@   	   startuppath=[pwd,'/'];
+%@  	   startupfile=[startuppath,'startup.m'];
+%@  	   toolboxroot=startuppath;
+%@  	   instpaths={''};
+%@        end
+%@     end
+%@    
+%@        errcode=95.21;
+%@        if ~isempty(install_path)
+%@           switch ( exist(install_path) )
+%@              case 0
+%@                in = input(['> Create ', install_path, '? Y/N [Y]: '],'s');
+%@                if isempty(in), in = 'Y'; end
+%@                if strcmpi('Y',in)
+%@                   err = mkdir(install_path);
+%@                   if ~err
+%@                     disp(['  ** Could not create ', install_path, '! Using ',startuppath,' as installation path.'])
+%@                   else                
+%@                     toolboxroot = install_path;
+%@                   end                
+%@                else 
+%@                   disp(['  ** Do not create ', install_path, '! Using ',startuppath,' as installation path.'])
+%@                end
+%@              case 2
+%@                disp(['  ** ', install_path, ' is not a directory! Using ',startuppath,' as installation path.'])
+%@              case 7
+%@                toolboxroot = install_path;
+%@           end
+%@        end
+%@
+%@     errcode=95.3;
+%@     TBfullpath=fullfile(toolboxroot,toolboxpath);
+%@     if ~exist(TBfullpath), err=mkdir(toolboxroot,toolboxpath); end
+%@
+%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%@% resolve ./ and ../ to absolute path
+%@% this part was suggested by Gaetan Koers (Vrije Universiteit Brussel)
+%@     gk_TBfullpath = [];
+%@     if str2num(version('-release')) >= 14
+%@          % TBfullpath starts with './' or '.\'
+%@          gk_tmp = regexpi(TBfullpath, '^\.{1}[\/|\\](.*)', 'tokens');
+%@          if ~isempty(gk_tmp)
+%@              gk_relpath = gk_tmp{1}{1};
+%@              gk_TBfullpath = fullfile(pwd, gk_relpath);
+%@          end
+%@          % TBfullpath starts with '../' or '..\'
+%@          gk_tmp = regexpi(TBfullpath, '^\.{2}[\/|\\](.*)', 'tokens');
+%@          if ~isempty(gk_tmp)
+%@              gk_relpath = gk_tmp{1}{1};
+%@              gk_tmp = regexpi(pwd, '(.*[\\|\/]).*', 'tokens');
+%@              gk_TBfullpath = fullfile(gk_tmp{1}{1}, gk_relpath);
+%@          end
+%@     else
+%@          % TBfullpath starts with './' or '.\'
+%@          [gk_tmp_start gk_tmp_finish gk_tmp]= regexpi(TBfullpath, '^\.{1}[\/|\\](.*)');
+%@          if ~isempty(gk_tmp)
+%@              gk_relpath = TBfullpath(gk_tmp_start(1) - 1 + gk_tmp{1}(1):gk_tmp{1}(2));
+%@              gk_TBfullpath = fullfile(pwd, gk_relpath);
+%@          end
+%@          % TBfullpath starts with '../' or '..\'
+%@          [gk_tmp_start gk_tmp_finish gk_tmp] = regexpi(TBfullpath, '^\.{2}[\/|\\](.*)');
+%@          if ~isempty(gk_tmp)
+%@              gk_relpath = TBfullpath(gk_tmp_start(1) - 1 + gk_tmp{1}(1):gk_tmp{1}(2));
+%@              gk_pwd = pwd;
+%@              [gk_tmp_start gk_tmp_finish gk_tmp] = regexpi(gk_pwd, '(.*[\\|\/]).*');
+%@              gk_TBfullpath = fullfile(gk_pwd(gk_tmp_start(1) - 1 + gk_tmp{1}(1):gk_tmp{1}(2)), gk_relpath);
+%@          end
+%@     end
+%@     if ~isempty(gk_TBfullpath), TBfullpath = gk_TBfullpath; end
+%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%@     
+%@
+%@     disp(['> In order to get permanent access, the toolbox should be added',10,'> to the top (default) or end (E) of your startup path.'])
+%@     in = input(['> Add toolbox permanently into your startup path (highly recommended)? Y/E/N [Y]: '],'s');
+%@     if isempty(in), in = 'Y'; end
+%@     if strcmpi('Y',in)
+%@       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -begin']};
+%@       disp('  Adding Toolbox at the end of the startup.m file')
+%@     elseif strcmpi('E',in)
+%@       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -end']};
+%@       disp('  Adding Toolbox at the top of the startup.m file')
+%@     end
+%@
+%@     if strcmpi('Y',in) | strcmpi('E',in)
+%@       errcode=95.4;
+%@       fid=fopen(startupfile,'w');
+%@       if fid < 0
+%@         disp(['  ** Warning: Could not get access to ',startupfile,'.']);
+%@         disp(['  ** Could not add toolbox into the startup.m file.']);
+%@         disp(['  ** Ensure that you have write access!']);
+%@       else
+%@         for i2=1:length(instpaths), err=fprintf(fid,'%s\n', char(instpaths{i2}));end
+%@         err=fclose(fid);
+%@       end
+%@     end
+%@
+%@  else
+%@     errcode=96;
+%@     startupfile=which('startup');
+%@     startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
+%@     if ~isunix
+%@        toolboxroot=fullfile(matlabroot,'toolbox');
+%@     else
+%@        toolboxroot=startuppath;
+%@     end
+%@    
+%@        errcode=96.21;
+%@        if ~isempty(install_path)
+%@           switch ( exist(install_path) )
+%@              case 0
+%@                disp(['> Create ', install_path, '?'])
+%@                in = input('> Create ', install_path, '? Y/N [Y]: ','s');
+%@                if isempty(in), in = 'Y'; end
+%@                if strcmpi('Y',in)
+%@                   err = mkdir(install_path);
+%@                   if ~err
+%@                     disp(['  ** Could not create ', install_path, '! Using ',startuppath,' as installation path.'])
+%@                   else                
+%@                     toolboxroot = install_path;
+%@                   end                
+%@                else 
+%@                   disp(['  ** Do not create ', install_path, '! Using ',startuppath,' as installation path.'])
+%@                end
+%@              case 2
+%@                disp(['  ** ', install_path, ' is not a directory! Using ',startuppath,' as installation path.'])
+%@              case 7
+%@                toolboxroot = install_path;
+%@           end
+%@        end
+%@     TBfullpath=fullfile(toolboxroot,toolboxpath);
+%@     if ~exist(TBfullpath), err=mkdir(toolboxroot,toolboxpath); end
+%@  end
+%@  
+%@  
+%@%%%%%%% read the archive
+%@  errcode=97;
+%@  fprintf('  Importing the archiv ')
+%@  cd(currentpath)
+%@  max_sc=30;
+%@  scale=[sprintf('%3.0f',0),'% |',repmat(' ',1,max_sc),'|'];
+%@  fprintf('%s',scale)
+%@  b=''; c.file=''; c.data=''; bfile=''; folder=''; i2=0;
+%@    
+%@    % read ASCII
+%@    errcode=97.1;
+%@    i1=findstr(char(A'),'%<-- ASCII begins here');
+%@    i2=findstr(char(A'),'%<-- ASCII ends here -->');
+%@    
+%@    for k=1:length(i1),
+%@      wb=round(i1(k)*max_sc/eofbyte);
+%@      errcode=97.11;
+%@      scale=[sprintf('%3.0f',100*wb/max_sc),'% |',repmat('*',1,wb),repmat(' ',1,max_sc-wb),'|'];
+%@      fprintf([repmat('\b',1,max_sc+7),'%s'],scale)
+%@      B=A(i1(k):i2(k)-2);
+%@     
+%@      i4=find(B==10);
+%@      i3=[0;i4(1:end-1)]+1;
+%@      filename=strrep(...
+%@                strrep(char(B(i3(1):i4(1)-1)'),'%<-- ASCII begins here: __',''),...
+%@  	      '__ -->','');
+%@      errcode=['97.1',reshape(dec2hex(double(filename))',1,length(filename)*2)];
+%@      i6=findstr(filename,'/');
+%@      if i6>0
+%@         folder=[folder; {filename(1:i6(end)-1)}];
+%@      end
+%@      c(k).file={filename};
+%@      c(k).data=strrep(char(B(i4(1)+3:end)'),[char(10),'%@'],char(10));;
+%@    end
+%@  
+%@    % read binary
+%@    errcode=97.2;
+%@    i1=findstr(char(A'),'%<-- Binary begins here');
+%@    i2=findstr(char(A'),'%<-- Binary ends here -->');
+%@    for k=1:length(i1),
+%@      wb=round(i1(k)*max_sc/eofbyte);
+%@      errcode=97.21;
+%@      scale=[sprintf('%3.0f',100*wb/max_sc),'% |',repmat('*',1,wb),repmat(' ',1,max_sc-wb),'|'];
+%@      fprintf([repmat('\b',1,max_sc+7),'%s'],scale)
+%@      B=A(i1(k):i2(k));
+%@  
+%@      i4=find(B==10);
+%@      i3=[0;i4(1:end-1)]+1;
+%@      i5=findstr(char(B(i3(1):i4(1))'),'__');
+%@      filename=char(B(i5(1)+2:i5(2)-1)');
+%@      errcode=['97.2',reshape(dec2hex(double(filename))',1,length(filename)*2)];
+%@      i6=findstr(filename,'/');
+%@      if i6>0
+%@  	folder=[folder; {filename(1:i6(end)-1)}];
+%@      end
+%@      bfile=[bfile; {filename}];
+%@      nbytes=str2num(char(B(i5(3)+2:i5(4)-1)'));
+%@      if nbytes>=2
+%@        temp=reshape(B(i4(1)+1:i4(1)+nbytes),2,nbytes/2);
+%@        b=[b;{temp(2,:)}];
+%@      else
+%@        b=[b;{''}];
+%@      end
+%@  
+%@    end
+%@    wb=max_sc;
+%@    scale=[sprintf('%3.0f',100*wb/max_sc),'% |',repmat('*',1,wb),repmat(' ',1,max_sc-wb),'|'];
+%@    fprintf([repmat('\b',1,max_sc+7),'%s'],scale)
+%@  fprintf('\n')
+%@  clear temp* i i1 i2 i3 i4 i5 i6 A B
+%@  
+%@  errcode='97.3';
+%@  cd(TBfullpath)
+%@  disp(['  Toolbox folder is ',TBfullpath,''])
+%@  
+%@%%%%%%% make sub-directories
+%@  errcode='97.4';
+%@  for i=1:length(folder);
+%@     i1=folder{i}; i2='.'; olddir=pwd;
+%@     if exist([TBfullpath, filesep, i1])~=7
+%@        while ~isempty(i2) & ~isempty(i1)
+%@          cd(i2)
+%@          [i2 i1]=strtok(i1,'/');
+%@          if exist([pwd, filesep, i2])~=7 & exist([pwd, filesep, i2])
+%@             disp(['  ** Warning: Found ', i2, ' will be overwritten.'])
+%@             errcode=['97.5',reshape(dec2hex(double(i2))',1,length(i2)*2)];
+%@             delete(i2)
+%@          end
+%@          if ~exist([pwd, filesep, i2])
+%@            disp(['  Make directory ',pwd, filesep, i2,''])
+%@            errcode=['97.6',reshape(dec2hex(double(i2))',1,length(i2)*2)];
+%@            mkdir(i2)
+%@          end
+%@        end
+%@        cd(olddir)
+%@     end
+%@  end
+%@
+%@%%%%%%% write the programme files
+%@  errcode=98;
+%@  num_errors=0;
+%@  for i=1:length(c),
+%@    disp(['  Creating ',char(c(i).file),''])
+%@    fid=fopen(char(c(i).file),'w');
+%@    if fid < 0
+%@       disp(['  ** Warning: Could not get access to ',char(c(i).file),'.']);
+%@       disp(['  ** Ensure that you have write access in this filesystem!']);
+%@       num_errors=num_errors+1;
+%@       if num_errors == 2; 
+%@         disp('Abort!')
+%@         disp('Too much errors due to write access failure in this filesystem.')
+%@         cd(currentpath), return
+%@       end
+%@    else
+%@      if strcmpi(c(i).file,'info.xml')
+%@        v=version;
+%@        release=str2num(v(findstr(v,'(R')+2:findstr(v,')')-1));
+%@        if release>12, area='toolbox'; icon_path='$toolbox/matlab/icons'; else area='matlab'; icon_path='$toolbox/matlab/general'; end
+%@        i3=findstr(c(i).data,'<matlabrelease>'); i4=findstr(c(i).data,'</matlabrelease>');
+%@        if ~isempty(i3) & i4>i3;
+%@          c(i).data=strrep(c(i).data,c(i).data(i3:i4-1),['<matlabrelease>',num2str(release)]);
+%@        end
+%@        i3=findstr(c(i).data,'<area>'); i4=findstr(c(i).data,'</area>');
+%@        if ~isempty(i3) & i4>i3;
+%@          c(i).data=strrep(c(i).data,c(i).data(i3:i4-1),['<area>',area]);
+%@        end
+%@        c(i).data=strrep(c(i).data,'<icon>$toolbox/matlab/general',['<icon>',icon_path]);
+%@        c(i).data=strrep(c(i).data,'<icon>$toolbox/matlab/icons',['<icon>',icon_path]);
+%@      end
+%@      err=fprintf(fid,'%s',char(c(i).data));
+%@      err=fclose(fid);
+%@    end
+%@  end
+%@
+%@%%%%%%% pcode the programme files
+%@  for i=1:length(c),
+%@    try
+%@      [tPath tFile tExt]=fileparts(char(c(i).file));
+%@      if strcmpi(tExt,'.m') & ~strcmpi(tFile,'Readme') & ~strcmpi(tFile,'Contents')
+%@        if mislocked(char(c(i).file)), munlock(char(c(i).file)); clear(char(c(i).file)); end
+%@        disp(['  Pcode ',char(c(i).file),''])
+%@        pcode(char(c(i).file),'-inplace')
+%@      end  
+%@    catch
+%@    end
+%@  end
+%@
+%@%%%%%%% write the binary files
+%@  num_errors=0;
+%@  for i=1:length(b),
+%@    disp(['  Creating ',char(bfile(i)),''])
+%@    fid=fopen(char(bfile(i)),'w');
+%@    if fid < 0
+%@       disp(['  ** Warning: Could not get access to ',char(bfile(i)),'.']);
+%@       disp(['  ** Ensure that you have write access in this filesystem!']);
+%@       num_errors=num_errors+1;
+%@       if num_errors == 2; 
+%@         disp('Abort!')
+%@         disp('Too much errors due to write access failure in this filesystem.')
+%@         cd(currentpath), return
+%@       end
+%@    else
+%@      err=fwrite(fid,b{i}); 
+%@      err=fclose(fid);
+%@    end
+%@  end
+%@  tx=version; tx=strtok(tx,'.'); 
+%@  if str2num(tx)>=5 & exist('rehash'), rehash, end
+%@  if str2num(tx)>=6 & exist('rehash'), eval('rehash toolboxcache'), end
+%@  
+%@%%%%%%% removing installation file
+%@  errcode=99;
+%@  cd(currentpath)
+%@  i = input('> Delete installation file? Y/N [Y]: ','s');
+%@  if isempty(i), i = 'Y'; end
+%@  
+%@  if strcmpi('Y',i)
+%@    disp('  Removing installation file')
+%@    delete(install_file)
+%@  end
+%@  
+%@%%%%%%% make toolbox accessible in the current matlab session
+%@  addpath(TBfullpath,'-end');
+%@  
+%@  disp('  Installation finished!')
+%@  
+%@  if ~exist('rehash')
+%@    disp('  ** Warning: Could not rehash your Matlab system.')
+%@    disp('  ** Probably a restart of Matlab will be necessary in order')
+%@    disp('  ** to get access to the installed toolbox.')
+%@  end
+%@  
+%@  disp('$lines$')
+%@  $infostring$
+%@  disp('For an overview type:')
+%@  disp(['helpwin ',toolboxpath])
+%@  warning('on')
+%@  
+%@  
+%@%%%%%%% error handling
+%@
+%@if 0 ; %catch
+%@  z2=whos;x_lasterr=lasterr;y_lastwarn=lastwarn;
+%@  if ~strcmpi(x_lasterr,'Interrupt')
+%@    if fid>-1, 
+%@      try, z_ferror=ferror(fid); catch, z_ferror='No error in the installation I/O process.'; end
+%@    else
+%@      z_ferror='File not found.'; 
+%@    end
+%@    installfile_info=dir([currentpath,filesep,install_file]);
+%@    fid=fopen(fullfile(currentpath,'install.log'),'w');
+%@    checksum_test=findstr(x_lasterr,'The installation file is corrupt!');
+%@    if isempty(checksum_test),checksum_test=0; end
+%@    if ~checksum_test
+%@      err=fprintf(fid,'%s\n','This script is under development and your assistance is');
+%@      err=fprintf(fid,'%s\n','urgently welcome. Please inform the distributor of the');
+%@      err=fprintf(fid,'%s\n','toolbox, where the error occured and send us the following');
+%@      err=fprintf(fid,'%s\n','error report and the informations about the toolbox (distributor,');
+%@      err=fprintf(fid,'%s\n','name etc.). Provide a brief description of what you were');
+%@      err=fprintf(fid,'%s\n','doing when this problem occurred.');
+%@      err=fprintf(fid,'%s\n','E-mail or FAX this information to us at:');
+%@      err=fprintf(fid,'%s\n','    E-mail:  marwan@agnld.uni-potsdam.de');
+%@      err=fprintf(fid,'%s\n','       Fax:  ++49 +331 977 1142');
+%@      err=fprintf(fid,'%s\n\n\n','Thank you for your assistance.');
+%@      err=fprintf(fid,'%s\n',repmat('-',50,1));
+%@      err=fprintf(fid,'%s\n',datestr(now,0));
+%@      err=fprintf(fid,'%s\n',['Matlab ',char(version),' on ',computer]);
+%@      err=fprintf(fid,'%s\n',repmat('-',50,1));
+%@      err=fprintf(fid,'%s\n','Makeinstall Version ==> $mi_version$');
+%@      err=fprintf(fid,'%s\n',['Install File ==> ',install_file,'/',installfile_info.date,'/',num2str(installfile_info.bytes)]);
+%@      err=fprintf(fid,'%s\n',['Container ==> ',time_stamp,'/',checksum]);
+%@      err=fprintf(fid,'%s\n\n',repmat('-',50,1));
+%@      err=fprintf(fid,'%s\n',x_lasterr);
+%@      err=fprintf(fid,'%s\n',y_lastwarn);
+%@      err=fprintf(fid,'%s\n',z_ferror);
+%@      err=fprintf(fid,'%s\n',[' errorcode ==> ',num2str(errcode)]);
+%@      err=fprintf(fid,'%s\n',' workspace dump ==>');
+%@      if ~isempty(z2), 
+%@        err=fprintf(fid,'%s\n',['Name',char(9),'Size',char(9),'Bytes',char(9),'Class']);
+%@        for j=1:length(z2);
+%@          err=fprintf(fid,'%s',[z2(j).name,char(9),num2str(z2(j).size),char(9),num2str(z2(j).bytes),char(9),z2(j).class]);
+%@          if ~strcmp(z2(j).class,'cell') & ~strcmp(z2(j).class,'struct')
+%@            content=eval(z2(j).name);
+%@            content=mat2str(content(1:min([size(content,1),500]),1:min([size(content,2),500])));
+%@            err=fprintf(fid,'\t%s',content(1:min([length(content),500])));
+%@          elseif strcmp(z2(j).class,'cell')
+%@            content=eval(z2(j).name);
+%@            err=fprintf(fid,'\t');
+%@            for j2=1:min([length(content),500])
+%@              if isnumeric(content{j2})
+%@                err=fprintf(fid,'{%s} ',content{j2}(1:end));
+%@              elseif iscell(content{j2})
+%@                err=fprintf(fid,'{%s} ',content{j2}{1:end});
+%@              end
+%@            end
+%@          elseif strcmp(z2(j).class,'struct')
+%@            content=fieldnames(eval(z2(j).name));
+%@            content=char(content); content(:,end+1)=' '; content=content';
+%@            err=fprintf(fid,'\t%s',content(:)');
+%@          end
+%@          err=fprintf(fid,'%s\n','');
+%@        end
+%@      end
+%@    else
+%@      err=fprintf(fid,'%s\n','Installation aborted due to a failed checksum test!');
+%@      err=fprintf(fid,'%s\n',['Checksum should be:     ', checksum]);
+%@      err=fprintf(fid,'%s\n\n',['Checksum of archive is: ', checksum_file]);
+%@      err=fprintf(fid,'%s\n','Ensure that the installation file was not modified by any');
+%@      err=fprintf(fid,'%s\n','other programme, as an anti-virus scanner for emails or a');
+%@      err=fprintf(fid,'%s\n','mis-configured FTP programme.');
+%@    end
+%@    err=fclose(fid);
+%@    disp('----------------------------');
+%@    disp('       ERROR OCCURED ');
+%@    disp('    during installation');
+%@    disp('----------------------------');
+%@    disp(x_lasterr);
+%@    if ~checksum_test
+%@      disp(z_ferror);
+%@      disp(['   errorcode is ',num2str(errcode)]);
+%@      disp('----------------------------');
+%@      disp('   This script is under development and your assistance is ')
+%@      disp('   urgently welcome. Please inform the distributor of the')
+%@      disp('   toolbox, where the error occured and send us the error')
+%@      disp('   report and the informations about the toolbox (distributor,')
+%@      disp('   name etc.). For your convenience, this information has been')
+%@      disp('   recorded in: ')
+%@      disp(['   ',fullfile(currentpath,'install.log')]), disp(' ')
+%@      disp('   Provide a brief description of what you were doing when ')
+%@      disp('   this problem occurred.'), disp(' ')
+%@      disp('   E-mail or FAX this information to us at:')
+%@      disp('       E-mail:  marwan@agnld.uni-potsdam.de')
+%@      disp('          Fax:  ++49 +331 977 1142'), disp(' ')
+%@      disp('   Thank you for your assistance.')
+%@    end
+%@  end
+%@  warning('on')
+%@  cd(currentpath)
+%@end
 %<-- ASCII ends here -->
 %<-- ASCII begins here: clean -->
-%#function $deinstall_file$
-%#%$deinstall_file_up$   Removes $toolboxname$.
-%#%    $deinstall_file_up$ removes all files of $toolboxname$ from
-%#%    the filesystem and its entry from the Matlab
-%#%    startup file.
-%#%    
-%#%    This installation script was generated by using 
-%#%    the MAKEINSTALL tool. For further information
-%#%    visit http://matlab.pucicu.de
-%#
-%#% Copyright (c) 2002-2003 by AMRON
-%#% Norbert Marwan, Potsdam University, Germany
-%#% http://www.agnld.uni-potsdam.de
-%#%
-%#% Generation date: $generation_date$
-%#% $Date$
-%#% $Revision$
-%#
-%#error(nargchk(0,0,nargin));
-%#
-%#try
-%#  warning('off')
-%#  disp('$lines$')
-%#  disp('    REMOVING $toolboxname$    ')
-%#  disp('$lines$')
-%#  currentpath=pwd;
-%#
-%#%%%%%%% check for older versions
-%#  
-%#  p=path; i1=0;
-%#  
-%#  while findstr(upper('$toolboxdir$'),upper(p))>i1;
-%#    i1=findstr(upper('$toolboxdir$'),upper(p));
-%#    if ~isempty(i1)
-%#      i1=i1(1);
-%#      if isunix, i2=findstr(':',p); else, i2=findstr(';',p); end
-%#      i3=i2(i2>i1);                 % last index pathname
-%#      if ~isempty(i3), i3=i3(1)-1; else, i3=length(p); end
-%#      i4=i2(i2<i1);                 % first index pathname
-%#      if ~isempty(i4), i4=i4(end)+1; else, i4=1; end
-%#      oldtoolboxpath=p(i4:i3);
-%#      disp(['  $toolboxname$ found in ', oldtoolboxpath,''])
-%#      i = input('> Delete $toolboxname$? Y/N [Y]: ','s');
-%#      if isempty(i), i = 'Y'; end
-%#      if strcmpi('Y',i)
-%#%%%%%%% removing old paths
-%#        if exist(oldtoolboxpath)==7
-%#           disp(['  Removing files in ',oldtoolboxpath,''])
-%#           cd(oldtoolboxpath)
-%#           dirnames='';filenames='';
-%#           temp='.:';
-%#           while ~isempty(temp)
-%#             [temp1 temp]=strtok(temp,':');
-%#             if ~isempty(temp1)
-%#               dirnames=[dirnames; {temp1}];
-%#               x2=dir(temp1);
-%#               for i=1:length(x2)
-%#                 if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
-%#         	   if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
-%#               end
-%#             end
-%#           end
-%#           dirnames=strrep(dirnames,['.',filesep],'');
-%#           for i=1:length(dirnames),l(i)=length(dirnames{i});;end
-%#           [i i4]=sort(l);
-%#           dirnames=dirnames(fliplr(i4));
-%#           for i=1:length(dirnames)
-%#              delete([dirnames{i}, filesep,'*'])
-%#              delete(dirnames{i})
-%#              disp(['  Removing files in ',char(dirnames{i}),''])
-%#           end
-%#           cd(currentpath)
-%#           delete(oldtoolboxpath)
-%#           disp(['  Removing folder ',oldtoolboxpath,''])
-%#        end
-%#%%%%%%% removing entry in startup-file
-%#        rmpath(oldtoolboxpath)
-%#        if i4>1, p(i4-1:i3)=''; else, p(i4:i3)=''; end
-%#          startup_exist = exist('startup');
-%#          if startup_exist
-%#             disp(['  Removing startup entry'])
-%#             startupfile=which('startup');
-%#             startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
-%#             instpaths=textread(startupfile,'%[^\n]');
-%#             k=1;
-%#             while k<=length(instpaths)
-%#               if ~isempty(findstr(oldtoolboxpath,instpaths{k}))
-%#               instpaths(k)=[];
-%#               end
-%#               k=k+1;
-%#             end
-%#             fid=fopen(startupfile,'w');
-%#             for i2=1:length(instpaths), 
-%#               err=fprintf(fid,'%s\n', char(instpaths(i2,:))); 
-%#             end
-%#             err=fclose(fid);
-%#             disp(['  $toolboxname$ now removed.'])
-%#          end
-%#        end
-%#    end
-%#  end
-%#  tx=version; tx=strtok(tx,'.'); if str2num(tx)>=6 & exist('rehash'), rehash, end
-%#  warning on
-%#  
-%#%%%%%%% error handling
-%#
-%#catch
-%#  x=lasterr;y=lastwarn;
-%#  if ~strcmpi(lasterr,'Interrupt')
-%#    if fid>-1, 
-%#      try, z=ferror(fid); catch, z='No error in the installation I/O process.'; end
-%#    else
-%#      z='File not found.'; 
-%#    end
-%#    fid=fopen('deinstall.log','w');
-%#    err=fprintf(fid,'%s\n','This script is under development and your assistance is');
-%#    err=fprintf(fid,'%s\n','urgently welcome. Please inform the distributor of the');
-%#    err=fprintf(fid,'%s\n','toolbox, where the error occured and send us the following');
-%#    err=fprintf(fid,'%s\n','error report and the informations about the toolbox (distributor,');
-%#    err=fprintf(fid,'%s\n','name etc.). Provide a brief description of what you were');
-%#    err=fprintf(fid,'%s\n','doing when this problem occurred.');
-%#    err=fprintf(fid,'%s\n','E-mail or FAX this information to us at:');
-%#    err=fprintf(fid,'%s\n','    E-mail:  marwan@agnld.uni-potsdam.de');
-%#    err=fprintf(fid,'%s\n','       Fax:  ++49 +331 977 1142');
-%#    err=fprintf(fid,'%s\n\n\n','Thank you for your assistance.');
-%#    err=fprintf(fid,'%s\n',repmat('-',50,1));
-%#    err=fprintf(fid,'%s\n',datestr(now,0));
-%#    err=fprintf(fid,'%s\n',['Matlab ',char(version),' on ',computer]);
-%#    err=fprintf(fid,'%s\n',repmat('-',50,1));
-%#    err=fprintf(fid,'%s\n','$toolboxname$');
-%#    err=fprintf(fid,'%s\n',x);
-%#    err=fprintf(fid,'%s\n',y);
-%#    err=fprintf(fid,'%s\n',z);
-%#    err=fclose(fid);
-%#    disp('----------------------------');
-%#    disp('       ERROR OCCURED ');
-%#    disp('   during deinstallation');
-%#    disp('----------------------------');
-%#    disp(x);
-%#    disp(z);
-%#    disp('----------------------------');
-%#    disp('   This script is under development and your assistance is ')
-%#    disp('   urgently welcome. Please inform the distributor of the')
-%#    disp('   toolbox, where the error occured and send us the error')
-%#    disp('   report and the informations about the toolbox (distributor,')
-%#    disp('   name etc.). For your convenience, this information has been')
-%#    disp('   recorded in: ')
-%#    disp(['   ',fullfile(pwd,'deinstall.log')]), disp(' ')
-%#    disp('   Provide a brief description of what you were doing when ')
-%#    disp('   this problem occurred.'), disp(' ')
-%#    disp('   E-mail or FAX this information to us at:')
-%#    disp('       E-mail:  marwan@agnld.uni-potsdam.de')
-%#    disp('          Fax:  ++49 +331 977 1142'), disp(' ')
-%#    disp('   Thank you for your assistance.')
-%#  end
-%#  warning('on')
-%#  cd(currentpath)
-%#end
+%@function $deinstall_file$
+%@%$deinstall_file_up$   Removes $toolboxname$.
+%@%    $deinstall_file_up$ removes all files of $toolboxname$ from
+%@%    the filesystem and its entry from the Matlab
+%@%    startup file.
+%@%    
+%@%    This installation script was generated by using 
+%@%    the MAKEINSTALL tool. For further information
+%@%    visit http://matlab.pucicu.de
+%@
+%@% Copyright (c) 2002-2003 by AMRON
+%@% Norbert Marwan, Potsdam University, Germany
+%@% http://www.agnld.uni-potsdam.de
+%@%
+%@% Generation date: $generation_date$
+%@% $Date$
+%@% $Revision$
+%@
+%@error(nargchk(0,0,nargin));
+%@
+%@try
+%@  warning('off')
+%@  disp('$lines$')
+%@  disp('    REMOVING $toolboxname$    ')
+%@  disp('$lines$')
+%@  currentpath=pwd;
+%@
+%@%%%%%%% check for older versions
+%@  
+%@  p=path; i1=0;
+%@  
+%@  while findstr(upper('$toolboxdir$'),upper(p))>i1;
+%@    i1=findstr(upper('$toolboxdir$'),upper(p));
+%@    if ~isempty(i1)
+%@      i1=i1(1);
+%@      if isunix, i2=findstr(':',p); else, i2=findstr(';',p); end
+%@      i3=i2(i2>i1);                 % last index pathname
+%@      if ~isempty(i3), i3=i3(1)-1; else, i3=length(p); end
+%@      i4=i2(i2<i1);                 % first index pathname
+%@      if ~isempty(i4), i4=i4(end)+1; else, i4=1; end
+%@      oldtoolboxpath=p(i4:i3);
+%@      disp(['  $toolboxname$ found in ', oldtoolboxpath,''])
+%@      i = input('> Delete $toolboxname$? Y/N [Y]: ','s');
+%@      if isempty(i), i = 'Y'; end
+%@      if strcmpi('Y',i)
+%@%%%%%%% removing old paths
+%@        if exist(oldtoolboxpath)==7
+%@           disp(['  Removing files in ',oldtoolboxpath,''])
+%@           cd(oldtoolboxpath)
+%@           dirnames='';filenames='';
+%@           temp='.:';
+%@           while ~isempty(temp)
+%@             [temp1 temp]=strtok(temp,':');
+%@             if ~isempty(temp1)
+%@               dirnames=[dirnames; {temp1}];
+%@               x2=dir(temp1);
+%@               for i=1:length(x2)
+%@                 if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
+%@         	   if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
+%@               end
+%@             end
+%@           end
+%@           dirnames=strrep(dirnames,['.',filesep],'');
+%@           for i=1:length(dirnames),l(i)=length(dirnames{i});;end
+%@           [i i4]=sort(l);
+%@           dirnames=dirnames(fliplr(i4));
+%@           for i=1:length(dirnames)
+%@              delete([dirnames{i}, filesep,'*'])
+%@              delete(dirnames{i})
+%@              disp(['  Removing files in ',char(dirnames{i}),''])
+%@           end
+%@           cd(currentpath)
+%@           delete(oldtoolboxpath)
+%@           disp(['  Removing folder ',oldtoolboxpath,''])
+%@        end
+%@%%%%%%% removing entry in startup-file
+%@        rmpath(oldtoolboxpath)
+%@        if i4>1, p(i4-1:i3)=''; else, p(i4:i3)=''; end
+%@          startup_exist = exist('startup');
+%@          if startup_exist
+%@             disp(['  Removing startup entry'])
+%@             startupfile=which('startup');
+%@             startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
+%@             instpaths=textread(startupfile,'%[^\n]');
+%@             k=1;
+%@             while k<=length(instpaths)
+%@               if ~isempty(findstr(oldtoolboxpath,instpaths{k}))
+%@               instpaths(k)=[];
+%@               end
+%@               k=k+1;
+%@             end
+%@             fid=fopen(startupfile,'w');
+%@             for i2=1:length(instpaths), 
+%@               err=fprintf(fid,'%s\n', char(instpaths(i2,:))); 
+%@             end
+%@             err=fclose(fid);
+%@             disp(['  $toolboxname$ now removed.'])
+%@          end
+%@        end
+%@    end
+%@  end
+%@  tx=version; tx=strtok(tx,'.'); if str2num(tx)>=6 & exist('rehash'), rehash, end
+%@  warning on
+%@  
+%@%%%%%%% error handling
+%@
+%@catch
+%@  x=lasterr;y=lastwarn;
+%@  if ~strcmpi(lasterr,'Interrupt')
+%@    if fid>-1, 
+%@      try, z=ferror(fid); catch, z='No error in the installation I/O process.'; end
+%@    else
+%@      z='File not found.'; 
+%@    end
+%@    fid=fopen('deinstall.log','w');
+%@    err=fprintf(fid,'%s\n','This script is under development and your assistance is');
+%@    err=fprintf(fid,'%s\n','urgently welcome. Please inform the distributor of the');
+%@    err=fprintf(fid,'%s\n','toolbox, where the error occured and send us the following');
+%@    err=fprintf(fid,'%s\n','error report and the informations about the toolbox (distributor,');
+%@    err=fprintf(fid,'%s\n','name etc.). Provide a brief description of what you were');
+%@    err=fprintf(fid,'%s\n','doing when this problem occurred.');
+%@    err=fprintf(fid,'%s\n','E-mail or FAX this information to us at:');
+%@    err=fprintf(fid,'%s\n','    E-mail:  marwan@agnld.uni-potsdam.de');
+%@    err=fprintf(fid,'%s\n','       Fax:  ++49 +331 977 1142');
+%@    err=fprintf(fid,'%s\n\n\n','Thank you for your assistance.');
+%@    err=fprintf(fid,'%s\n',repmat('-',50,1));
+%@    err=fprintf(fid,'%s\n',datestr(now,0));
+%@    err=fprintf(fid,'%s\n',['Matlab ',char(version),' on ',computer]);
+%@    err=fprintf(fid,'%s\n',repmat('-',50,1));
+%@    err=fprintf(fid,'%s\n','$toolboxname$');
+%@    err=fprintf(fid,'%s\n',x);
+%@    err=fprintf(fid,'%s\n',y);
+%@    err=fprintf(fid,'%s\n',z);
+%@    err=fclose(fid);
+%@    disp('----------------------------');
+%@    disp('       ERROR OCCURED ');
+%@    disp('   during deinstallation');
+%@    disp('----------------------------');
+%@    disp(x);
+%@    disp(z);
+%@    disp('----------------------------');
+%@    disp('   This script is under development and your assistance is ')
+%@    disp('   urgently welcome. Please inform the distributor of the')
+%@    disp('   toolbox, where the error occured and send us the error')
+%@    disp('   report and the informations about the toolbox (distributor,')
+%@    disp('   name etc.). For your convenience, this information has been')
+%@    disp('   recorded in: ')
+%@    disp(['   ',fullfile(pwd,'deinstall.log')]), disp(' ')
+%@    disp('   Provide a brief description of what you were doing when ')
+%@    disp('   this problem occurred.'), disp(' ')
+%@    disp('   E-mail or FAX this information to us at:')
+%@    disp('       E-mail:  marwan@agnld.uni-potsdam.de')
+%@    disp('          Fax:  ++49 +331 977 1142'), disp(' ')
+%@    disp('   Thank you for your assistance.')
+%@  end
+%@  warning('on')
+%@  cd(currentpath)
+%@end
+%@
 %<-- ASCII ends here -->
