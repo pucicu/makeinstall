@@ -77,6 +77,10 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.9  2005/04/08 11:17:07  marwan
+% comment combination (for container) changed
+% small bugfixes, suggested by Gaetan Koers
+%
 % Revision 3.8  2005/02/22 12:27:14  marwan
 % windoof bug fixed (ocurred during removing of old toolbox)
 %
@@ -264,28 +268,28 @@ if fid>0
        temp=fgetl(fid);
        if ~ischar(temp), break, end
        if length(temp)>1
-	 if strcmpi(temp,'%<-- ASCII begins here: install -->')
-	   eofbyte=ftell(fid);
-	   flag=1;
-	 elseif strcmpi(temp,'%<-- ASCII begins here: clean -->')
-	   eofbyte=ftell(fid)-eofbyte-1000;
-	   flag=2;
-	 elseif strcmpi(temp,'%<-- ASCII ends here -->')
-	   flag=0; i=1;
-	 end
+       if strcmpi(temp,'%<-- ASCII begins here: install -->')
+	       eofbyte=ftell(fid);
+	       flag=1;
+       elseif strcmpi(temp,'%<-- ASCII begins here: clean -->')
+	       eofbyte=ftell(fid)-eofbyte-1000;
+	       flag=2;
+       elseif strcmpi(temp,'%<-- ASCII ends here -->')
+	       flag=0; i=1;
+       end
 	 
          if findstr(temp(1:2),'%@')==1
            aline=repmat('-',1,length(toolbox_name)+17);
 	       switch flag
 	       case 1
-    % read install part
+                 % read install part
+                 temp = strrep(temp,13,''); % remove the CR end of a line (if DOS style)
                  b(i,1)={temp(3:end)};
 	             b(i)=strrep(b(i),'$lines$',aline);
 	             b(i)=strrep(b(i),'$installpath$',install_path);
 	             b(i)=strrep(b(i),'$toolboxdirpc$',install_dirPC);
 	             b(i)=strrep(b(i),'$toolboxdirunix$',install_dirUNIX);
 	             b(i)=strrep(b(i),'$toolboxname$',toolbox_name);
-        %	     b(i)=strrep(b(i),'$install_file$',install_file);
 	             b(i)=strrep(b(i),'$generation_date$',time_string);
 	             b(i)=strrep(b(i),'$check_for_old$',check_for_old);
 	             b(i)=strrep(b(i),'$mi_version$',mi_version);
@@ -295,7 +299,8 @@ if fid>0
 	                b(i)=strrep(b(i),'$infostring$',['disp(''',infostring,''')']);
 	             end
 	       case 2
-    % read uninstall part
+                 % read uninstall part
+                 temp = strrep(temp,13,''); % remove the CR end of a line (if DOS style)
                  c(i,1)={temp(3:end)};
 	             c(i)=strrep(c(i),'$lines$',aline);
 	             c(i)=strrep(c(i),'$toolboxdir$',install_dirPC);
@@ -545,6 +550,7 @@ if fid>0
   end
   dirnames=strrep(dirnames,filesep,'/');
   dirnames=strrep(dirnames,'./','');
+  filenames=strrep(filenames,filesep,'/');
   filenames=strrep(filenames,'./','');
   
   % ignore CVS folders
@@ -556,11 +562,12 @@ if fid>0
   dirnames(remove) = [];
   
 
-  % ignore makeinstall.rc and .cvsignore
+  % ignore makeinstall.rc, makeinstall.m and .cvsignore
   i=1;
   while i<=length(filenames)
     if strncmpi('p.',fliplr(filenames{i}),2), filenames(i)=[]; i=i-1; end
     if strcmpi('makeinstall.rc',filenames{i}), filenames(i)=[]; i=i-1; end
+    if strcmpi('makeinstall.m',filenames{i}), filenames(i)=[]; i=i-1; end
     if strcmpi('.cvsignore',filenames{i}), filenames(i)=[]; i=i-1; end
     i=i+1;
   end
@@ -716,7 +723,7 @@ if restart, makeinstall(varargin{:}), end
 %@time_stamp='';checksum='';checksum_file='';
 %@errcode=0;
 %@
-%@%try
+%@try
 %@  warning('off')
 %@  if nargin
 %@    install_path = varargin{1};
@@ -736,7 +743,7 @@ if restart, makeinstall(varargin{:}), end
 %@  disp('  Reading the archiv ')
 %@  fid=fopen(install_file,'r'); 
 %@  fseek(fid,0,'eof'); eofbyte=ftell(fid);
-%@  fseek(fid,$startbyte$,'bof');
+%@  fseek(fid,$startbyte$,'bof'); % location where the container starts
 %@  while 1
 %@     temp=fgetl(fid);
 %@     startbyte=ftell(fid);
@@ -904,7 +911,7 @@ if restart, makeinstall(varargin{:}), end
 %@           cd ~
 %@           if exist('matlab')~=7, mkdir matlab, end
 %@           cd matlab
-%@   	   startuppath=[pwd,'/'];
+%@   	   startuppath=[pwd,filesep];
 %@  	   startupfile=[startuppath,'startup.m'];
 %@  	   toolboxroot=startuppath;
 %@  	   instpaths={''};
@@ -938,43 +945,22 @@ if restart, makeinstall(varargin{:}), end
 %@     TBfullpath=fullfile(toolboxroot,toolboxpath);
 %@     if ~exist(TBfullpath), err=mkdir(toolboxroot,toolboxpath); end
 %@
-%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%@% resolve ./ and ../ to absolute path
-%@% this part was suggested by Gaetan Koers (Vrije Universiteit Brussel)
-%@     gk_TBfullpath = [];
-%@     if str2num(version('-release')) >= 14
-%@          % TBfullpath starts with './' or '.\'
-%@          gk_tmp = regexpi(TBfullpath, '^\.{1}[\/|\\](.*)', 'tokens');
-%@          if ~isempty(gk_tmp)
-%@              gk_relpath = gk_tmp{1}{1};
-%@              gk_TBfullpath = fullfile(pwd, gk_relpath);
-%@          end
-%@          % TBfullpath starts with '../' or '..\'
-%@          gk_tmp = regexpi(TBfullpath, '^\.{2}[\/|\\](.*)', 'tokens');
-%@          if ~isempty(gk_tmp)
-%@              gk_relpath = gk_tmp{1}{1};
-%@              gk_tmp = regexpi(pwd, '(.*[\\|\/]).*', 'tokens');
-%@              gk_TBfullpath = fullfile(gk_tmp{1}{1}, gk_relpath);
-%@          end
-%@     else
-%@          % TBfullpath starts with './' or '.\'
-%@          [gk_tmp_start gk_tmp_finish gk_tmp]= regexpi(TBfullpath, '^\.{1}[\/|\\](.*)');
-%@          if ~isempty(gk_tmp)
-%@              gk_relpath = TBfullpath(gk_tmp_start(1) - 1 + gk_tmp{1}(1):gk_tmp{1}(2));
-%@              gk_TBfullpath = fullfile(pwd, gk_relpath);
-%@          end
-%@          % TBfullpath starts with '../' or '..\'
-%@          [gk_tmp_start gk_tmp_finish gk_tmp] = regexpi(TBfullpath, '^\.{2}[\/|\\](.*)');
-%@          if ~isempty(gk_tmp)
-%@              gk_relpath = TBfullpath(gk_tmp_start(1) - 1 + gk_tmp{1}(1):gk_tmp{1}(2));
-%@              gk_pwd = pwd;
-%@              [gk_tmp_start gk_tmp_finish gk_tmp] = regexpi(gk_pwd, '(.*[\\|\/]).*');
-%@              gk_TBfullpath = fullfile(gk_pwd(gk_tmp_start(1) - 1 + gk_tmp{1}(1):gk_tmp{1}(2)), gk_relpath);
-%@          end
+%@%%%%%%% resolve relative path (starting with ./ and ../) to absolute path
+%@
+%@     isrelpath = findstr('./',TBfullpath);
+%@     isrelpathDos = findstr('.\',TBfullpath);
+%@     if ( ~isempty(isrelpath) & isrelpath == 1 ) | ( ~isempty(isrelpathDos) & isrelpathDos == 1 )
+%@         TBfullpath = fullfile(pwd, TBfullpath(3:end));
 %@     end
-%@     if ~isempty(gk_TBfullpath), TBfullpath = gk_TBfullpath; end
-%@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%@
+%@     isrelpath = findstr('../',TBfullpath);
+%@     isrelpathDos = findstr('..\',TBfullpath);
+%@     if ( ~isempty(isrelpath) & isrelpath == 1 ) | ( ~isempty(isrelpathDos) & isrelpathDos == 1 )
+%@         TBfullpath = fullfile(pwd, TBfullpath(4:end));
+%@     end
 %@     
+%@
+%@%%%%%%% ask where to add entry in startup file
 %@
 %@     disp(['> In order to get permanent access, the toolbox should be added',10,'> to the top (default) or end (E) of your startup path.'])
 %@     in = input(['> Add toolbox permanently into your startup path (highly recommended)? Y/E/N [Y]: '],'s');
@@ -1033,8 +1019,8 @@ if restart, makeinstall(varargin{:}), end
 %@                toolboxroot = install_path;
 %@           end
 %@        end
-%@     TBfullpath=fullfile(toolboxroot,toolboxpath);
-%@     if ~exist(TBfullpath), err=mkdir(toolboxroot,toolboxpath); end
+%@        TBfullpath=fullfile(toolboxroot,toolboxpath);
+%@        if ~exist(TBfullpath), err=mkdir(toolboxroot,toolboxpath); end
 %@  end
 %@  
 %@  
@@ -1065,7 +1051,8 @@ if restart, makeinstall(varargin{:}), end
 %@                strrep(char(B(i3(1):i4(1)-1)'),'%<-- ASCII begins here: __',''),...
 %@  	      '__ -->','');
 %@      errcode=['97.1',reshape(dec2hex(double(filename))',1,length(filename)*2)];
-%@      i6=findstr(filename,'/');
+%@      filename = strrep(filename, '/', filesep);
+%@      i6=findstr(filename, filesep);
 %@      if i6>0
 %@         folder=[folder; {filename(1:i6(end)-1)}];
 %@      end
@@ -1089,7 +1076,8 @@ if restart, makeinstall(varargin{:}), end
 %@      i5=findstr(char(B(i3(1):i4(1))'),'__');
 %@      filename=char(B(i5(1)+2:i5(2)-1)');
 %@      errcode=['97.2',reshape(dec2hex(double(filename))',1,length(filename)*2)];
-%@      i6=findstr(filename,'/');
+%@      filename = strrep(filename, '/', filesep);
+%@      i6=findstr(filename, filesep);
 %@      if i6>0
 %@  	folder=[folder; {filename(1:i6(end)-1)}];
 %@      end
@@ -1239,7 +1227,7 @@ if restart, makeinstall(varargin{:}), end
 %@  
 %@%%%%%%% error handling
 %@
-%@if 0 ; %catch
+%@catch
 %@  z2=whos;x_lasterr=lasterr;y_lastwarn=lastwarn;
 %@  if ~strcmpi(x_lasterr,'Interrupt')
 %@    if fid>-1, 
