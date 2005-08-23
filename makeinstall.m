@@ -77,6 +77,12 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.10  2005/05/20 09:56:14  marwan
+% bug in relative-to-absolute-path conversion fixed
+% confusing of DOS and Unix fileseparators resolved
+% bug due to DOS line end (CR instead of LF) resolved
+% bug due to Makeinstall self packaging resolved (Makeinstall.m now excluded)
+%
 % Revision 3.9  2005/04/08 11:17:07  marwan
 % comment combination (for container) changed
 % small bugfixes, suggested by Gaetan Koers
@@ -123,7 +129,7 @@ elseif nargin==2
 end
 
 % get version number of the makeinstall-script
-mi_file=[mfilename('fullpath'), '.m'];
+mi_file = which(mfilename);
 mi_version='none';
 fid=fopen(mi_file,'r');
 if fid~=-1
