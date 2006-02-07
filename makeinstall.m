@@ -52,7 +52,7 @@ function makeinstall(varargin)
 %   MAKEINSTALL GPL.
 
 % FREE SOFTWARE - please refer the source
-% Copyright (c) 2002-2005 by AMRON
+% Copyright (c) 2002-2006 by AMRON
 % Norbert Marwan, Potsdam University, Germany
 % http://www.agnld.uni-potsdam.de
 %
@@ -77,6 +77,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.11  2005/08/23 07:21:21  marwan
+% fixed downwards compatibility of mfilename command
+%
 % Revision 3.10  2005/05/20 09:56:14  marwan
 % bug in relative-to-absolute-path conversion fixed
 % confusing of DOS and Unix fileseparators resolved
@@ -522,7 +525,8 @@ if fid>0
        contents=[contents;{temp}];
      end
      fclose(fid);
-     if isempty(findstr(lower(contents{2}),'version'))
+
+     if length(contents) > 1 & isempty(findstr(lower(contents{2}),'version'))
        contents(3:end+1)=contents(2:end);
      end
      if ~strcmp(release,' ') & ~isempty(release), release=[' (',release,') ']; end
@@ -716,7 +720,7 @@ if restart, makeinstall(varargin{:}), end
 %@%    the MAKEINSTALL tool. For further information
 %@%    visit http://matlab.pucicu.de
 %@
-%@% Copyright (c) 2001-2005 by AMRON
+%@% Copyright (c) 2001-2006 by AMRON
 %@% Norbert Marwan, Potsdam University, Germany
 %@% http://www.agnld.uni-potsdam.de
 %@%
@@ -1173,7 +1177,9 @@ if restart, makeinstall(varargin{:}), end
 %@      if strcmpi(tExt,'.m') & ~strcmpi(tFile,'Readme') & ~strcmpi(tFile,'Contents')
 %@        if mislocked(char(c(i).file)), munlock(char(c(i).file)); clear(char(c(i).file)); end
 %@        disp(['  Pcode ',char(c(i).file),''])
-%@        pcode(char(c(i).file),'-inplace')
+%@        if sum(c(i).file == '.') < 2
+%@           pcode(char(c(i).file),'-inplace')
+%@        end  
 %@      end  
 %@    catch
 %@    end
@@ -1300,8 +1306,8 @@ if restart, makeinstall(varargin{:}), end
 %@      err=fprintf(fid,'%s\n',['Checksum should be:     ', checksum]);
 %@      err=fprintf(fid,'%s\n\n',['Checksum of archive is: ', checksum_file]);
 %@      err=fprintf(fid,'%s\n','Ensure that the installation file was not modified by any');
-%@      err=fprintf(fid,'%s\n','other programme, as an anti-virus scanner for emails or a');
-%@      err=fprintf(fid,'%s\n','mis-configured FTP programme.');
+%@      err=fprintf(fid,'%s\n','other programme, as an anti-virus scanner for emails, a');
+%@      err=fprintf(fid,'%s\n','mis-configured HTTP proxy or FTP programme.');
 %@    end
 %@    err=fclose(fid);
 %@    disp('----------------------------');
