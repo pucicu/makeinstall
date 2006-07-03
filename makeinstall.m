@@ -77,6 +77,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.13  2006/03/17 08:31:01  marwan
+% code optimised and flattened
+%
 % Revision 3.12  2006/02/07 13:45:11  marwan
 % pcode bug resolved (R14 incompatibility)
 %
@@ -776,7 +779,7 @@ if restart, makeinstall(varargin{:}), end
 %@  checksum(1:2)=[];
 %@  fseek(fid,startbyte,'bof');
 %@  errcode=90.2;
-%@  A=fread(fid,eofbyte,'char');
+%@  A=fread(fid,eofbyte);
 %@  errcode=90.3;
 %@  checksum_file=dec2hex(sum((1:length(A))'.*A));
 %@  if ~strcmpi(checksum_file,checksum)
