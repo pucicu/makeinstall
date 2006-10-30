@@ -77,6 +77,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.14  2006/07/03 08:04:36  marwan
+% Checksum error bug in Matlab 2006a solved
+%
 % Revision 3.13  2006/03/17 08:31:01  marwan
 % code optimised and flattened
 %
@@ -898,6 +901,7 @@ if restart, makeinstall(varargin{:}), end
 %@  
 %@%%%%%%% add entry into startpath in startup.m
 %@  i=findstr(toolboxpath,path);
+%@  startupPos = 0;
 %@  if isempty(i)
 %@     errcode=95;
 %@     if exist('startup','file')
@@ -981,24 +985,19 @@ if restart, makeinstall(varargin{:}), end
 %@     in = input('> Add toolbox permanently into your startup path (highly recommended)? Y/E/N [Y]: ','s');
 %@     if isempty(in), in = 'Y'; end
 %@     if strcmpi('Y',in)
-%@       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -begin']};
+%@       startupPos = '-begin';
 %@       disp('  Adding Toolbox at the end of the startup.m file')
 %@     elseif strcmpi('E',in)
-%@       instpaths{end+1,1}={['addpath ''',TBfullpath,''' -end']};
+%@       startupPos = '-end';
 %@       disp('  Adding Toolbox at the top of the startup.m file')
 %@     end
 %@
-%@     if strcmpi('Y',in) | strcmpi('E',in)
-%@       errcode=95.4;
-%@       fid=fopen(startupfile,'w');
-%@       if fid < 0
-%@         disp(['  ** Warning: Could not get access to ',startupfile,'.']);
-%@         disp('  ** Could not add toolbox into the startup.m file.');
-%@         disp('  ** Ensure that you have write access!');
-%@       else
-%@         for i2=1:length(instpaths), fprintf(fid,'%s\n', char(instpaths{i2})); end
-%@         fclose(fid);
-%@       end
+%@     if startupPos
+%@         errcode=95.4;
+%@         loc = ['addpath ''',TBfullpath,''' ', startupPos];
+%@         if ~ismember(loc, instpaths)
+%@             instpaths{end+1,1} = loc;
+%@         end
 %@     end
 %@
 %@  else
@@ -1133,11 +1132,39 @@ if restart, makeinstall(varargin{:}), end
 %@            disp(['  Make directory ',pwd, filesep, i2,''])
 %@            errcode=['97.6',reshape(dec2hex(double(i2))',1,length(i2)*2)];
 %@            mkdir(i2)
+%@            errcode=97.7;
+%@            if ~strcmpi(i2,'private') & i2 ~= '@'
+%@                 loc = ['addpath ''',pwd, filesep, i2,''' ', startupPos];
+%@                 eval(loc);
+%@                 if ~ismember(loc, instpaths)
+%@                     instpaths{end+1,1} = loc;
+%@                 end
+%@            end
 %@          end
 %@        end
 %@        cd(olddir)
 %@     end
 %@  end
+%@  
+%@%%%%%%% make toolbox accessible in the current matlab session
+%@  if ~startupPos, startupPos = '-end'; end
+%@  addpath(TBfullpath,startupPos);
+%@
+%@
+%@%%%%%%% write startup file
+%@  if startupPos
+%@    errcode=95.4;
+%@    fid=fopen(startupfile,'w');
+%@    if fid < 0
+%@      disp(['  ** Warning: Could not get access to ',startupfile,'.']);
+%@      disp('  ** Could not add toolbox into the startup.m file.');
+%@      disp('  ** Ensure that you have write access!');
+%@    else
+%@      for i2=1:length(instpaths), fprintf(fid,'%s\n', char(instpaths{i2})); end
+%@      fclose(fid);
+%@    end
+%@  end
+%@
 %@
 %@%%%%%%% write the programme files
 %@  errcode=98;
@@ -1223,9 +1250,6 @@ if restart, makeinstall(varargin{:}), end
 %@    disp('  Removing installation file')
 %@    delete(install_file)
 %@  end
-%@  
-%@%%%%%%% make toolbox accessible in the current matlab session
-%@  addpath(TBfullpath,'-end');
 %@  
 %@  disp('  Installation finished!')
 %@  
