@@ -77,6 +77,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.15  2006/10/30 17:32:21  marwan
+% include subdirectories support
+%
 % Revision 3.14  2006/07/03 08:04:36  marwan
 % Checksum error bug in Matlab 2006a solved
 %
@@ -335,7 +338,7 @@ if isempty(varargin) | ~strcmpi(varargin,'gpl') % create install file if not the
         if exist(fullfile(olddir,'install.m'),'file'), delete(fullfile(olddir,'install.m')); end
         fid = fopen(fullfile(olddir,install_file),'w');
         startbyte = eofbyte;
-        for i2 = 1:length(b), b(i2) = strrep(b(i2),'$startbyte$',num2str(startbyte-500)); fprintf(fid,'%s\n',char(b(i2))); end
+        for i2 = 1:length(b), b(i2) = strrep(b(i2),'$startbyte$',num2str(startbyte-1000)); fprintf(fid,'%s\n',char(b(i2))); end
         fclose(fid);
 
         disp(['   Source directory ', src_dir,''])
@@ -551,7 +554,7 @@ if isempty(varargin) | ~strcmpi(varargin,'gpl') % create install file if not the
 
 
         % find sub-directories
-        dirnames = '';filenames = '';
+        dirnames = ''; filenames = '';
         temp = '.:';
         while ~isempty(temp)
             [temp1 temp] = strtok(temp,':');
@@ -739,7 +742,7 @@ if restart, makeinstall(varargin{:}), end
 %@% $Revision$
 %@
 %@install_file='';install_path='$installpath$';installfile_info.date='';installfile_info.bytes=[];
-%@time_stamp='';checksum='';checksum_file='';
+%@time_stamp='';checksum='';checksum_file=''; instpaths = '';
 %@errcode=0;
 %@
 %@try
@@ -807,8 +810,9 @@ if restart, makeinstall(varargin{:}), end
 %@%%%%%%% check for older versions
 %@  
 %@  p=path; i1=0;
+%@  rem_old = '';
 %@  
-%@  while any($check_for_old$>i1)
+%@  while any($check_for_old$>i1) & ~strcmpi('N',rem_old)
 %@    errcode=92;
 %@    i1=$check_for_old$;
 %@    if ~isempty(i1)
@@ -819,8 +823,10 @@ if restart, makeinstall(varargin{:}), end
 %@      i4=i2(i2<i1);                 % first index pathname
 %@      if ~isempty(i4), i4=i4(end)+1; else i4=1; end
 %@      oldtoolboxpath=p(i4:i3);
-%@      disp(['  Old $toolboxname$ found in ', oldtoolboxpath,''])
-%@      rem_old = input('> Delete old toolbox? Y/N [Y]: ','s');
+%@      if isempty(rem_old)
+%@          disp(['  Old $toolboxname$ found in ', oldtoolboxpath,''])
+%@          rem_old = input('> Delete old toolbox? Y/N [Y]: ','s');
+%@      end
 %@      if isempty(rem_old), rem_old = 'Y'; end
 %@      if strcmpi('Y',rem_old)
 %@%%%%%%% removing old entries in startup-file
@@ -886,25 +892,24 @@ if restart, makeinstall(varargin{:}), end
 %@           dirnames=dirnames(fliplr(i4));
 %@           for i=1:length(dirnames)
 %@              delete([dirnames{i}, filesep,'*']),
-%@              delete(dirnames{i}),
+%@              if exist('rmdir') == 5 & exist(dirnames{i}) == 7, rmdir(dirnames{i},'s'), else, delete(dirnames{i}), end
 %@              disp(['  Removing files in ',char(dirnames{i}),''])
 %@           end
 %@           cd(currentpath)
-%@           delete(oldtoolboxpath)
+%@           if exist('rmdir') == 5 & exist(oldtoolboxpath) == 7, rmdir(oldtoolboxpath,'s'), else, delete(oldtoolboxpath), end
 %@           disp(['  Removing ',oldtoolboxpath,''])
 %@        end
 %@%%%%%%%
 %@      end
 %@    end
+%@    p = path; i1 = 0;
 %@  end
 %@  clear p i i1 i2 i3 i4 temp* x2
 %@  
 %@%%%%%%% add entry into startpath in startup.m
 %@  i=findstr(toolboxpath,path);
 %@  startupPos = 0;
-%@  if isempty(i)
-%@     errcode=95;
-%@     if exist('startup','file')
+%@  if exist('startup','file')
 %@        errcode=95.1;
 %@        startupfile=which('startup');
 %@        startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
@@ -917,7 +922,11 @@ if restart, makeinstall(varargin{:}), end
 %@           toolboxroot=startuppath;
 %@        end
 %@        instpaths=textread(startupfile,'%[^\n]');
-%@  
+%@  end
+%@  if isempty(i)
+%@     errcode=95;
+%@     if exist('startup','file')
+%@        errcode=95.1;
 %@     else
 %@        errcode=95.2;
 %@        if ~isunix
@@ -1134,6 +1143,7 @@ if restart, makeinstall(varargin{:}), end
 %@            mkdir(i2)
 %@            errcode=97.7;
 %@            if ~strcmpi(i2,'private') & i2 ~= '@'
+%@                 if isempty(startupPos) startupPos = '-end'; end
 %@                 loc = ['addpath ''',pwd, filesep, i2,''' ', startupPos];
 %@                 eval(loc);
 %@                 if ~ismember(loc, instpaths)
@@ -1272,7 +1282,7 @@ if restart, makeinstall(varargin{:}), end
 %@  z2=whos;x_lasterr=lasterr;y_lastwarn=lastwarn;
 %@  if ~strcmpi(x_lasterr,'Interrupt')
 %@    if fid>-1, 
-%@      try z_ferror=ferror(fid); catch z_ferror='No error in the installation I/O process.'; end
+%@      try, z_ferror=ferror(fid); catch, z_ferror='No error in the installation I/O process.'; end
 %@    else
 %@      z_ferror='File not found.'; 
 %@    end
@@ -1378,7 +1388,7 @@ if restart, makeinstall(varargin{:}), end
 %@%    the MAKEINSTALL tool. For further information
 %@%    visit http://matlab.pucicu.de
 %@
-%@% Copyright (c) 2002-2003 by AMRON
+%@% Copyright (c) 2002-2006 by AMRON
 %@% Norbert Marwan, Potsdam University, Germany
 %@% http://www.agnld.uni-potsdam.de
 %@%
@@ -1394,25 +1404,52 @@ if restart, makeinstall(varargin{:}), end
 %@  disp('    REMOVING $toolboxname$    ')
 %@  disp('$lines$')
 %@  currentpath=pwd;
+%@  oldtoolboxpath = fileparts(which(mfilename));
 %@
-%@%%%%%%% check for older versions
+%@  disp(['  $toolboxname$ found in ', oldtoolboxpath,''])
+%@  i = input('> Delete $toolboxname$? Y/N [Y]: ','s');
+%@  if isempty(i), i = 'Y'; end
+%@
+%@  if strcmpi('Y',i)
+%@%%%%%%% check for entries in startup
 %@  
-%@  p=path; i1=0;
+%@        p=path; i1=0; i = '';
 %@  
-%@  while findstr(upper('$toolboxdir$'),upper(p))>i1;
-%@    i1=findstr(upper('$toolboxdir$'),upper(p));
-%@    if ~isempty(i1)
-%@      i1=i1(1);
-%@      if isunix, i2=findstr(':',p); else, i2=findstr(';',p); end
-%@      i3=i2(i2>i1);                 % last index pathname
-%@      if ~isempty(i3), i3=i3(1)-1; else, i3=length(p); end
-%@      i4=i2(i2<i1);                 % first index pathname
-%@      if ~isempty(i4), i4=i4(end)+1; else, i4=1; end
-%@      oldtoolboxpath=p(i4:i3);
-%@      disp(['  $toolboxname$ found in ', oldtoolboxpath,''])
-%@      i = input('> Delete $toolboxname$? Y/N [Y]: ','s');
-%@      if isempty(i), i = 'Y'; end
-%@      if strcmpi('Y',i)
+%@        while findstr(upper('$toolboxdir$'),upper(p)) > i1
+%@           i1=findstr(upper('$toolboxdir$'),upper(p));
+%@           if ~isempty(i1)
+%@               i1=i1(end);
+%@               if isunix, i2=findstr(':',p); else, i2=findstr(';',p); end
+%@               i3=i2(i2>i1);                 % last index pathname
+%@               if ~isempty(i3), i3=i3(1)-1; else, i3=length(p); end
+%@               i4=i2(i2<i1);                 % first index pathname
+%@               if ~isempty(i4), i4=i4(end)+1; else, i4=1; end
+%@               rmtoolboxpath=p(i4:i3);
+%@%%%%%%% removing entry in startup-file
+%@               rmpath(rmtoolboxpath)
+%@               if i4>1, p(i4-1:i3)=''; else, p(i4:i3)=''; end
+%@               startup_exist = exist('startup','file');
+%@               if startup_exist
+%@                    startupfile=which('startup');
+%@                    startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
+%@                    instpaths=textread(startupfile,'%[^\n]');
+%@                    k=1;
+%@                    while k <= length(instpaths)
+%@                        if ~isempty(findstr(rmtoolboxpath,instpaths{k}))
+%@                            disp(['  Removing startup entry ', instpaths{k}])
+%@                            instpaths(k)=[];
+%@                        end
+%@                        k=k+1;
+%@                    end
+%@                    fid=fopen(startupfile,'w');
+%@                    for i2=1:length(instpaths), 
+%@                        fprintf(fid,'%s\n', char(instpaths(i2,:))); 
+%@                    end
+%@                    fclose(fid);
+%@               end
+%@           end
+%@           p = path; i1 = 0;
+%@       end
 %@%%%%%%% removing old paths
 %@        if exist(oldtoolboxpath,'dir') == 7
 %@           disp(['  Removing files in ',oldtoolboxpath,''])
@@ -1420,57 +1457,38 @@ if restart, makeinstall(varargin{:}), end
 %@           dirnames='';filenames='';
 %@           temp='.:';
 %@           while ~isempty(temp)
-%@             [temp1 temp]=strtok(temp,':');
-%@             if ~isempty(temp1)
-%@               dirnames=[dirnames; {temp1}];
-%@               x2=dir(temp1);
-%@               for i=1:length(x2)
-%@                 if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
-%@         	   if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
+%@               [temp1 temp]=strtok(temp,':');
+%@               if ~isempty(temp1)
+%@                   dirnames=[dirnames; {temp1}];
+%@                   x2=dir(temp1);
+%@                   for i=1:length(x2)
+%@                       if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
+%@         	             if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
+%@                   end
 %@               end
-%@             end
 %@           end
-%@           dirnames=strrep(dirnames,['.',filesep],'');
+%@           dirnames = strrep(dirnames,['.',filesep],'');
+%@           dirnames(strcmpi('.',dirnames)) = [];
 %@           l = zeros(length(dirnames),1); for i=1:length(dirnames),l(i)=length(dirnames{i}); end
-%@           [i i4]=sort(l);
-%@           dirnames=dirnames(fliplr(i4));
+%@           [i i4]=sort(l); i4 = i4(:);
+%@           dirnames=dirnames(flipud(i4));
 %@           for i=1:length(dirnames)
 %@              delete([dirnames{i}, filesep,'*'])
-%@              delete(dirnames{i})
+%@              if exist('rmdir') == 5 & exist(dirnames{i}) == 7, rmdir(dirnames{i},'s'), else, delete(dirnames{i}), end
 %@              disp(['  Removing files in ',char(dirnames{i}),''])
 %@           end
-%@           cd(currentpath)
-%@           delete(oldtoolboxpath)
+%@           if exist(currentpath), cd(currentpath), else, cd .., end
+%@           if strcmpi(currentpath,oldtoolboxpath), cd .., end
+%@           if exist('rmdir') == 5 & exist(oldtoolboxpath) == 7, rmdir(oldtoolboxpath,'s'), else, delete(oldtoolboxpath), end
 %@           disp(['  Removing folder ',oldtoolboxpath,''])
 %@        end
-%@%%%%%%% removing entry in startup-file
-%@        rmpath(oldtoolboxpath)
-%@        if i4>1, p(i4-1:i3)=''; else, p(i4:i3)=''; end
-%@          startup_exist = exist('startup','file');
-%@          if startup_exist
-%@             disp(['  Removing startup entry'])
-%@             startupfile=which('startup');
-%@             startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
-%@             instpaths=textread(startupfile,'%[^\n]');
-%@             k=1;
-%@             while k <= length(instpaths)
-%@               if ~isempty(findstr(oldtoolboxpath,instpaths{k}))
-%@               instpaths(k)=[];
-%@               end
-%@               k=k+1;
-%@             end
-%@             fid=fopen(startupfile,'w');
-%@             for i2=1:length(instpaths), 
-%@               fprintf(fid,'%s\n', char(instpaths(i2,:))); 
-%@             end
-%@             fclose(fid);
-%@             disp(['  $toolboxname$ now removed.'])
-%@          end
-%@        end
-%@    end
+%@       disp(['  $toolboxname$ now removed.'])
+%@  else
+%@       disp(['  Nothing happened. Keep smiling.'])
 %@  end
 %@  tx=version; tx=strtok(tx,'.'); if str2double(tx)>=6 & exist('rehash','builtin'), rehash, end
 %@  warning on
+%@  if exist(currentpath,'dir') ~= 7, cd(fileparts(currentpath)), else, cd(currentpath), end
 %@  
 %@%%%%%%% error handling
 %@
@@ -1478,7 +1496,7 @@ if restart, makeinstall(varargin{:}), end
 %@  x=lasterr;y=lastwarn;
 %@  if ~strcmpi(lasterr,'Interrupt')
 %@    if fid>-1, 
-%@      try, z=ferror(fid); catch z='No error in the installation I/O process.'; end
+%@      try, z=ferror(fid); catch, z='No error in the installation I/O process.'; end
 %@    else
 %@      z='File not found.'; 
 %@    end
@@ -1524,7 +1542,7 @@ if restart, makeinstall(varargin{:}), end
 %@    disp('   Thank you for your assistance.')
 %@  end
 %@  warning('on')
-%@  cd(currentpath)
+%@  if exist(currentpath,'dir') == 7, cd(fileparts(currentpath)), else, cd(currentpath), end
 %@end
 %@
 %<-- ASCII ends here -->
