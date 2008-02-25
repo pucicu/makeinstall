@@ -60,7 +60,8 @@ function makeinstall(varargin)
 % programme. Thanks to Gaetan Koers of Vrije Universiteit Brussel
 % for hints about Windows compatibility and improvement the help-text
 % parser. Thanks also to Volkmar Glauche of University of Hamburg 
-% (Universitatsklinikum) for usefule hints and comments about the
+% (Universitatsklinikum) and Eduard vander Zwan (Wageningen 
+% Universiteit) for usefule hints and comments about the
 % root-folder of the toolbox and the startup.m entries.
 %
 % This programme is free software; you can redistribute it and/or
@@ -77,6 +78,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.16  2006/11/07 07:55:43  marwan
+% several bug fixes and upwards compatibility
+%
 % Revision 3.15  2006/10/30 17:32:21  marwan
 % include subdirectories support
 %
@@ -401,10 +405,11 @@ if isempty(varargin) | ~strcmpi(varargin,'gpl') % create install file if not the
             mrelease = str2double(v(findstr(v,'(R')+2:findstr(v,')')-1));
             if mrelease>12, area = 'toolbox'; icon_path = '$toolbox/matlab/icons'; else area = 'matlab'; icon_path = '$toolbox/matlab/general'; end
             fid = fopen('info.xml','w'); 
-            fprintf(fid,'%s\n\n','<productinfo>');
+            fprintf(fid,'%s\n','<productinfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="optional">');
+            fprintf(fid,'%s\n\n','<?xml-stylesheet type="text/xsl" href="optional"?>');
             fprintf(fid,'%s\n',['<matlabrelease>',num2str(mrelease),'</matlabrelease>']);
             fprintf(fid,'%s\n',['<name>',xml_name,'</name>']);
-            fprintf(fid,'%s\n',['<area>',area,'</area>']);
+            fprintf(fid,'%s\n',['<type>',area,'</type>']);
             fprintf(fid,'%s\n\n',['<icon>',icon_path,'/matlabicon.gif</icon>']);
             fprintf(fid,'%s\n\n','<list>');
             if ~isempty(xml_start)
@@ -621,7 +626,7 @@ if isempty(varargin) | ~strcmpi(varargin,'gpl') % create install file if not the
                 strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'mth')
 
                 c = [c, ['%<-- ASCII begins here: __',char(filenames{i}),'__ -->'], 10];
-                in = char(fread(fid,'char')');
+                in = char(fread(fid)');
                 in = strrep(in,char(10),[char(10),'%@']);
                 %      while 1
                 %         temp = fgetl(fid);
@@ -671,7 +676,7 @@ if isempty(varargin) | ~strcmpi(varargin,'gpl') % create install file if not the
         fclose(fid);
 
         cd(olddir)
-
+        
 
     else
         % make makeinstall.rc file
@@ -932,21 +937,21 @@ if restart, makeinstall(varargin{:}), end
 %@        if ~isunix
 %@           errcode=95.21;
 %@           startupfile=fullfile(matlabroot,'toolbox','local','startup.m');
-%@  	   toolboxroot=fullfile(matlabroot,'toolbox');
-%@  	   instpaths={''};
+%@  	     toolboxroot=fullfile(matlabroot,'toolbox');
+%@  	     instpaths={''};
 %@        else
 %@           errcode=95.22;
 %@           cd ~
 %@           if exist('matlab','file') ~= 7, mkdir matlab, end
 %@           cd matlab
-%@   	   startuppath=[pwd,filesep];
-%@  	   startupfile=[startuppath,'startup.m'];
-%@  	   toolboxroot=startuppath;
-%@  	   instpaths={''};
+%@   	     startuppath=[pwd,filesep];
+%@  	     startupfile=[startuppath,'startup.m'];
+%@  	     toolboxroot=startuppath;
+%@  	     instpaths={''};
 %@        end
 %@     end
 %@    
-%@        errcode=95.21;
+%@        errcode=95.23;
 %@        if ~isempty(install_path)
 %@           switch ( exist(install_path,'dir') )
 %@              case 0
@@ -1354,6 +1359,14 @@ if restart, makeinstall(varargin{:}), end
 %@    disp('    during installation');
 %@    disp('----------------------------');
 %@    disp(x_lasterr);
+%@    if errcode == 95.21
+%@       disp('----------------------------');
+%@       disp('   This error probably occured due to in-appropriate');
+%@       disp('   permission settings of the Matlab folder. Please');
+%@       disp('   ensure that Matlab has writing permissions to its');
+%@       disp('   own programme folder!');
+%@       disp('----------------------------');
+%@    end
 %@    if ~checksum_test
 %@      disp(z_ferror);
 %@      disp(['   errorcode is ',num2str(errcode)]);
