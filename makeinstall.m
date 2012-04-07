@@ -51,7 +51,7 @@ function makeinstall(varargin)
 %   To view the text of this license, type
 %   MAKEINSTALL BSD.
 
-% Copyright (c) 2008-2009
+% Copyright (c) 2008-2012
 % Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany
 % http://www.pik-potsdam.de
 %
@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.19  2009/06/12 07:50:23  marwan
+% change from GPL to BSD License
+%
 % Revision 3.18  2009/03/24 09:19:58  marwan
 % updated contact data and copyright address
 %
@@ -253,13 +256,13 @@ if ~exist(bsdrc_file,'file') | strcmpi(varargin,'bsd')
         disp('Click on the license to close them.')
     end
     fid = fopen(bsdrc_file,'w');
-    fprintf(fid,'%s\n','If you delete this file, the GNU Public License will');
+    fprintf(fid,'%s\n','If you delete this file, the BSD License will');
     fprintf(fid,'%s','splash up at the next time the programme starts.');
     fclose(fid);
 
     h = figure('NumberTitle','off',...,
             'ButtonDownFcn','close',...
-            'Name','GNU General Public License');
+            'Name','BSD License');
     ha = get(h,'Position');
     h = uicontrol('Style','Listbox',...
             'ButtonDownFcn','close',...
@@ -431,8 +434,8 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             mrelease = str2double(v(findstr(v,'(R')+2:findstr(v,')')-1));
             if mrelease>12, area = 'toolbox'; icon_path = '$toolbox/matlab/icons'; else area = 'matlab'; icon_path = '$toolbox/matlab/general'; end
             fid = fopen('info.xml','w'); 
-            fprintf(fid,'%s\n','<productinfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="optional">');
-            fprintf(fid,'%s\n\n','<?xml-stylesheet type="text/xsl" href="optional"?>');
+            fprintf(fid,'%s\n','<productinfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.mathworks.com/namespace/info/v1/info.xsd">');
+            fprintf(fid,'%s\n\n','<?xml-stylesheet type="text/xsl" href="http://www.mathworks.com/namespace/info/v1/info.xsd"?>');
             fprintf(fid,'%s\n',['<matlabrelease>',num2str(mrelease),'</matlabrelease>']);
             fprintf(fid,'%s\n',['<name>',xml_name,'</name>']);
             fprintf(fid,'%s\n',['<type>',area,'</type>']);
@@ -910,6 +913,7 @@ if restart, makeinstall(varargin{:}), end
 %@           cd(oldtoolboxpath)
 %@           dirnames='';filenames='';
 %@           temp='.:';
+%@           errcode=93.1;
 %@           while ~isempty(temp)
 %@             [temp1 temp]=strtok(temp,':');
 %@             if ~isempty(temp1)
@@ -921,17 +925,22 @@ if restart, makeinstall(varargin{:}), end
 %@               end
 %@             end
 %@           end
+%@           errcode=93.2;
 %@           dirnames=strrep(dirnames,['.',filesep],'');
 %@           for i=1:length(dirnames),l(i)=length(dirnames{i}); end
 %@           [i i4]=sort(l);
 %@           dirnames=dirnames(fliplr(i4));
+%@           errcode=93.3;
 %@           for i=1:length(dirnames)
+%@              if dirnames{i} == '.', continue, end
 %@              delete([dirnames{i}, filesep,'*']),
 %@              if exist('rmdir') == 5 & exist(dirnames{i}) == 7, rmdir(dirnames{i},'s'), else, delete(dirnames{i}), end
 %@              disp(['  Removing files in ',char(dirnames{i}),''])
 %@           end
+%@           errcode=93.4;
 %@           cd(currentpath)
 %@           if exist('rmdir') == 5 & exist(oldtoolboxpath) == 7, rmdir(oldtoolboxpath,'s'), else, delete(oldtoolboxpath), end
+%@           errcode=93.5;
 %@           disp(['  Removing ',oldtoolboxpath,''])
 %@        end
 %@%%%%%%%
@@ -951,7 +960,8 @@ if restart, makeinstall(varargin{:}), end
 %@  
 %@        if ~isunix
 %@           errcode=95.11;
-%@           toolboxroot=fullfile(matlabroot,'toolbox');
+%@           %toolboxroot=fullfile(matlabroot,'toolbox');
+%@           toolboxroot=strtok(userpath,';');
 %@        else
 %@           errcode=95.12;
 %@           toolboxroot=startuppath;
@@ -966,8 +976,12 @@ if restart, makeinstall(varargin{:}), end
 %@        errcode=95.2;
 %@        if ~isunix
 %@           errcode=95.21;
-%@           startupfile=fullfile(matlabroot,'toolbox','local','startup.m');
-%@  	     toolboxroot=fullfile(matlabroot,'toolbox');
+%@           toolboxroot=strtok(userpath,';');
+%@           err = 1;
+%@           if exist(toolboxroot,'file') ~= 7, err=mkdir(toolboxroot); end
+%@           if ~err, error('Could not create toolbox path.'), end
+%@           cd(toolboxroot)
+%@           startupfile=fullfile(toolboxroot,'startup.m');
 %@  	     instpaths={''};
 %@        else
 %@           errcode=95.22;
@@ -1049,7 +1063,8 @@ if restart, makeinstall(varargin{:}), end
 %@     startupfile=which('startup');
 %@     startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
 %@     if ~isunix
-%@        toolboxroot=fullfile(matlabroot,'toolbox');
+%@        toolboxroot=strtok(userpath,';');
+%@        %toolboxroot=fullfile(matlabroot,'toolbox');
 %@     else
 %@        toolboxroot=startuppath;
 %@     end
@@ -1205,7 +1220,7 @@ if restart, makeinstall(varargin{:}), end
 %@      disp('  ** Could not add toolbox into the startup.m file.');
 %@      disp('  ** Ensure that you have write access!');
 %@    else
-%@      for i2=1:length(instpaths), fprintf(fid,'%s\n', char(instpaths{i2})); end
+%@      for i2=1:length(instpaths), fprintf(fid,'%s\n', char(instpaths{i2})); disp(char(instpaths{i2}));end
 %@      fclose(fid);
 %@    end
 %@  end
