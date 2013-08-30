@@ -100,6 +100,11 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.20  2012/04/07 12:47:22  marwan
+% changed to BSD license
+% added errorcode during deleting old toolbox
+% changed toolbox location from general Matlab folder to user's matlab folder in Windows
+%
 % Revision 3.19  2009/06/12 07:50:23  marwan
 % change from GPL to BSD License
 %
@@ -204,7 +209,7 @@ end
 filename = 'makeinstall';
 
 txt = {'';'BSD LICENSE';
-'';'Copyright (c) 2008-2009';
+'';'Copyright (c) 2008-2012';
 'Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany';
 'http://www.pik-potsdam.de';
 '';
@@ -724,7 +729,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             fprintf(fid,'%s\n','install_file=''install.m'';             % name of the install script');
             fprintf(fid,'%s\n','deinstall_file=''tbclean.m'';           % name of the deinstall script');
             fprintf(fid,'%s\n','old_dirs='''';                          % possible old (obsolete) toolbox folders');
-            fprintf(fid,'%s\n','install_path='''';                      % the root folder where the toolbox folder will be located (default is $USER$/matlab or $MATLABROOT$/toolbox)');
+            fprintf(fid,'%s\n','install_path='''';                      % the root folder where the toolbox folder will be located (default is $USER$/matlab or $MATLABROOT$/toolbox, or $USERS$/octave when installing for Octave)');
             fprintf(fid,'%s\n',['install_dirUNIX=''',toolbox_name,''';   % the folder where the toolbox files will be extracted (UNIX)']);
             fprintf(fid,'%s\n','install_dirPC=install_dirUNIX;          % the folder where the toolbox files will be extracted (PC)');
             fprintf(fid,'%s\n\n',['src_dir=''',pwd,'''; % folder with the origin toolbox']);
@@ -766,7 +771,7 @@ if restart, makeinstall(varargin{:}), end
 %@%    the MAKEINSTALL tool. For further information
 %@%    visit http://matlab.pucicu.de
 %@
-%@% Copyright (c) 2008-2009
+%@% Copyright (c) 2008-2012
 %@% Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany
 %@% http://www.pik-potsdam.de
 %@%
@@ -785,6 +790,11 @@ if restart, makeinstall(varargin{:}), end
 %@
 %@try
 %@  warning('off')
+%@  if isoctave
+%@     disp(['  You are trying to install the toolbox in Octave.',10,'  Some compatibility issues might appear.'])
+%@     warning('off','Octave:possible-matlab-short-circuit-operator')
+%@     more off
+%@  end
 %@  if nargin
 %@    install_path = varargin{1};
 %@  end
@@ -871,10 +881,15 @@ if restart, makeinstall(varargin{:}), end
 %@        errcode=94;
 %@        rmpath(oldtoolboxpath)
 %@        if i4>1, p(i4-1:i3)=''; else p(i4:i3)=''; end
-%@        startup_exist = exist('startup','var');
+%@        startup_exist = exist('startup','file');
+%@        if isoctave startup_exist = exist('~/.octaverc','file'); end
 %@        if startup_exist
 %@             startupfile=which('startup');
 %@             startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
+%@             if isoctave
+%@                startuppath = '~/';
+%@                startupfile = '~/.octaverc';
+%@             end
 %@             errcode=94.1;
 %@             if ~isunix
 %@               toolboxroot=fullfile(matlabroot,'toolbox');
@@ -883,7 +898,15 @@ if restart, makeinstall(varargin{:}), end
 %@               toolboxroot=startuppath;
 %@               curr_pwd = pwd; cd ('~'); home_pwd = pwd; cd(curr_pwd);
 %@             end
-%@             instpaths=textread(startupfile,'%[^\n]');
+%@             fid = fopen(startupfile,'r');
+%@             k = 1;
+%@             while 1
+%@                 tmp = fgetl(fid);
+%@                 if ~ischar(tmp), break, end
+%@                 instpaths{k} = tmp;
+%@                 k = k + 1;
+%@             end
+%@             fclose(fid);
 %@             k=1;
 %@             while k <= length(instpaths)
 %@               if findstr(oldtoolboxpath,strrep(instpaths{k},'~',home_pwd))
@@ -957,6 +980,10 @@ if restart, makeinstall(varargin{:}), end
 %@        errcode=95.1;
 %@        startupfile=which('startup');
 %@        startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
+%@        if isoctave
+%@           startuppath = '~/';
+%@           startupfile = '~/.octaverc';
+%@        end
 %@  
 %@        if ~isunix
 %@           errcode=95.11;
@@ -966,11 +993,21 @@ if restart, makeinstall(varargin{:}), end
 %@           errcode=95.12;
 %@           toolboxroot=startuppath;
 %@        end
-%@        instpaths=textread(startupfile,'%[^\n]');
+%@        fid = fopen(startupfile,'r');
+%@        k = 1;
+%@        while 1
+%@            tmp = fgetl(fid);
+%@            if ~ischar(tmp), break, end
+%@            instpaths{k} = tmp;
+%@            k = k + 1;
+%@        end
+%@        fclose(fid);
 %@  end
 %@  if isempty(i)
 %@     errcode=95;
-%@     if exist('startup','file')
+%@     startupfilestr = 'startup.m';
+%@     if isoctave startupfilestr = '~/.octaverc'; toolboxroot = '~/octave'; end
+%@     if exist(startupfilestr,'file')
 %@        errcode=95.1;
 %@     else
 %@        errcode=95.2;
@@ -979,17 +1016,24 @@ if restart, makeinstall(varargin{:}), end
 %@           toolboxroot=strtok(userpath,';');
 %@           err = 1;
 %@           if exist(toolboxroot,'file') ~= 7, err=mkdir(toolboxroot); end
-%@           if ~err, error('Could not create toolbox path.'), end
+%@           if ~err | exist(toolboxroot,'file') ~= 7, error('Could not create toolbox path.'), end
 %@           cd(toolboxroot)
 %@           startupfile=fullfile(toolboxroot,'startup.m');
-%@  	     instpaths={''};
+%@           instpaths={''};
 %@        else
 %@           errcode=95.22;
 %@           cd ~
-%@           if exist('matlab','file') ~= 7, mkdir matlab, end
-%@           cd matlab
 %@   	     startuppath=[pwd,filesep];
-%@  	     startupfile=[startuppath,'startup.m'];
+%@           if isoctave
+%@              if exist('octave','file') ~= 7, mkdir octave, end
+%@              cd octave
+%@  	          startupfile=[startuppath,'.octaverc'];
+%@           else
+%@              if exist('matlab','file') ~= 7, mkdir matlab, end
+%@              cd matlab
+%@  	          startupfile=[startuppath,'startup.m'];
+%@           end
+%@           
 %@  	     toolboxroot=startuppath;
 %@  	     instpaths={''};
 %@        end
@@ -1039,13 +1083,13 @@ if restart, makeinstall(varargin{:}), end
 %@
 %@%%%%%%% ask where to add entry in startup file
 %@
-%@     disp(['> In order to get permanent access, the toolbox should be added',10,'> to the top (default) or end (E) of your startup path.'])
-%@     in = input('> Add toolbox permanently into your startup path (highly recommended)? Y/E/N [Y]: ','s');
+%@     disp(['> In order to get permanent access, the toolbox should be added',10,'> to the end (default) or top (E) of your startup path.'])
+%@     in = input('> Add toolbox permanently into your startup path (highly recommended)? Y/T/N [Y]: ','s');
 %@     if isempty(in), in = 'Y'; end
 %@     if strcmpi('Y',in)
 %@       startupPos = '-begin';
 %@       disp('  Adding Toolbox at the end of the startup.m file')
-%@     elseif strcmpi('E',in)
+%@     elseif strcmpi('T',in)
 %@       startupPos = '-end';
 %@       disp('  Adding Toolbox at the top of the startup.m file')
 %@     end
@@ -1054,7 +1098,7 @@ if restart, makeinstall(varargin{:}), end
 %@         errcode=95.4;
 %@         loc = ['addpath ''',TBfullpath,''' ', startupPos];
 %@         if ~ismember(loc, instpaths)
-%@             instpaths{end+1,1} = loc;
+%@             instpaths{end+1} = loc;
 %@         end
 %@     end
 %@
@@ -1062,6 +1106,10 @@ if restart, makeinstall(varargin{:}), end
 %@     errcode=96;
 %@     startupfile=which('startup');
 %@     startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
+%@     if isoctave
+%@         startuppath = '~/';
+%@         startupfile = '~/.octaverc';
+%@     end
 %@     if ~isunix
 %@        toolboxroot=strtok(userpath,';');
 %@        %toolboxroot=fullfile(matlabroot,'toolbox');
@@ -1197,7 +1245,7 @@ if restart, makeinstall(varargin{:}), end
 %@                 loc = ['addpath ''',pwd, filesep, i2,''' ', startupPos];
 %@                 eval(loc);
 %@                 if ~ismember(loc, instpaths)
-%@                     instpaths{end+1,1} = loc;
+%@                     instpaths{end+1} = loc;
 %@                 end
 %@            end
 %@          end
@@ -1214,6 +1262,14 @@ if restart, makeinstall(varargin{:}), end
 %@%%%%%%% write startup file
 %@  if startupPos
 %@    errcode=95.4;
+%@    if ~exist(startupfile,'var')
+%@        if isoctave
+%@            startupfile = '~/.octaverc';
+%@        else
+%@            startupfile = '~/matlab/startup.m';
+%@        end
+%@    end
+%@
 %@    fid=fopen(startupfile,'w');
 %@    if fid < 0
 %@      disp(['  ** Warning: Could not get access to ',startupfile,'.']);
@@ -1324,6 +1380,9 @@ if restart, makeinstall(varargin{:}), end
 %@  disp('For an overview type:')
 %@  disp(['helpwin ',toolboxpath])
 %@  warning('on')
+%@  if isoctave
+%@      more on
+%@  end
 %@  
 %@  
 %@%%%%%%% error handling
@@ -1332,7 +1391,7 @@ if restart, makeinstall(varargin{:}), end
 %@  z2=whos;x_lasterr=lasterr;y_lastwarn=lastwarn;
 %@  if ~strcmpi(x_lasterr,'Interrupt')
 %@    if fid>-1, 
-%@      try, z_ferror=ferror(fid); catch, z_ferror='No error in the installation I/O process.'; end
+%@      try, z_ferror=ferror(fid); catch, z_ferror=''; end
 %@    else
 %@      z_ferror='File not found.'; 
 %@    end
@@ -1370,7 +1429,7 @@ if restart, makeinstall(varargin{:}), end
 %@          fprintf(fid,'%s',[z2(j).name,char(9),num2str(z2(j).size),char(9),num2str(z2(j).bytes),char(9),z2(j).class]);
 %@          if ~strcmp(z2(j).class,'cell') & ~strcmp(z2(j).class,'struct')
 %@            content=eval(z2(j).name);
-%@            content=mat2str(content(1:min([size(content,1),500]),1:min([size(content,2),500])));
+%@            try, content=mat2str(content(1:min([size(content,1),500]),1:min([size(content,2),500])));end
 %@            fprintf(fid,'\t%s',content(1:min([length(content),500])));
 %@          elseif strcmp(z2(j).class,'cell')
 %@            content=eval(z2(j).name);
@@ -1406,10 +1465,13 @@ if restart, makeinstall(varargin{:}), end
 %@    disp(x_lasterr);
 %@    if errcode == 95.21
 %@       disp('----------------------------');
-%@       disp('   This error probably occured due to in-appropriate');
-%@       disp('   permission settings of the Matlab folder. Please');
-%@       disp('   ensure that Matlab has writing permissions to its');
-%@       disp('   own programme folder!');
+%@       disp('   This error means that the toolbox directory could not');
+%@       disp('   be created. Probably, there is a file of the same name.');
+%@       disp('   or there are in-appropriate permission settings in its');
+%@       disp('   parent folder.');
+%@       disp('   Please check the output of the following command:');
+%@       disp('      userpath(''reset'')');
+%@       disp('   which might help to locate the problem.');
 %@       disp('----------------------------');
 %@    end
 %@    if ~checksum_test
@@ -1433,6 +1495,23 @@ if restart, makeinstall(varargin{:}), end
 %@  end
 %@  warning('on')
 %@  cd(currentpath)
+%@  if isoctave
+%@      more on
+%@  end
+%@end
+%@
+%@function flag = isoctave
+%@% ISOCTAVE   Checks whether the code is running in Octave
+%@%   ISOCTAVE is returning the value TRUE if executed within the
+%@%   Octave environment, else it is returning FALSE (e.g. when
+%@%   called within Matlab.
+%@
+%@a = ver('Octave');
+%@
+%@if ~isempty(a) && strfind(a(1).Name,'Octave')
+%@    flag = true;
+%@else
+%@    flag = false;
 %@end
 %<-- ASCII ends here -->
 %<-- ASCII begins here: clean -->
@@ -1446,7 +1525,7 @@ if restart, makeinstall(varargin{:}), end
 %@%    the MAKEINSTALL tool. For further information
 %@%    visit http://matlab.pucicu.de
 %@
-%@% Copyright (c) 2008-2009
+%@% Copyright (c) 2008-2012
 %@% Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany
 %@% http://www.pik-potsdam.de
 %@%
@@ -1461,6 +1540,9 @@ if restart, makeinstall(varargin{:}), end
 %@error(nargchk(0,0,nargin));
 %@
 %@try
+%@  if isoctave
+%@      more off
+%@  end
 %@  warning('off')
 %@  disp('$lines$')
 %@  disp('    REMOVING $toolboxname$    ')
@@ -1550,6 +1632,9 @@ if restart, makeinstall(varargin{:}), end
 %@  end
 %@  tx=version; tx=strtok(tx,'.'); if str2double(tx)>=6 & exist('rehash','builtin'), rehash, end
 %@  warning on
+%@  if isoctave
+%@      more on
+%@  end
 %@  if exist(currentpath,'dir') ~= 7, cd(fileparts(currentpath)), else, cd(currentpath), end
 %@  
 %@%%%%%%% error handling
@@ -1605,6 +1690,9 @@ if restart, makeinstall(varargin{:}), end
 %@  end
 %@  warning('on')
 %@  if exist(currentpath,'dir') == 7, cd(fileparts(currentpath)), else, cd(currentpath), end
+%@  if isoctave
+%@      more on
+%@  end
 %@end
 %@
 %<-- ASCII ends here -->
