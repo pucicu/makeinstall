@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.21  2013/08/30 17:42:52  marwan
+% added octave compatibility (default path and .octaverc support)
+%
 % Revision 3.20  2012/04/07 12:47:22  marwan
 % changed to BSD license
 % added errorcode during deleting old toolbox
@@ -892,7 +895,11 @@ if restart, makeinstall(varargin{:}), end
 %@             end
 %@             errcode=94.1;
 %@             if ~isunix
-%@               toolboxroot=fullfile(matlabroot,'toolbox');
+%@               if isoctave
+%@                   toolboxroot=fullfile(matlabroot);
+%@               else
+%@                   toolboxroot=fullfile(matlabroot,'toolbox');
+%@               end
 %@               curr_pwd = pwd; home_pwd = matlabroot; 
 %@             else
 %@               toolboxroot=startuppath;
@@ -976,7 +983,9 @@ if restart, makeinstall(varargin{:}), end
 %@%%%%%%% add entry into startpath in startup.m
 %@  i=findstr(toolboxpath,path);
 %@  startupPos = 0;
-%@  if exist('startup','file')
+%@  startup_exist = exist('startup','file');
+%@  if isoctave startup_exist = exist('~/.octaverc','file'); end
+%@  if startup_exist
 %@        errcode=95.1;
 %@        startupfile=which('startup');
 %@        startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
@@ -988,7 +997,11 @@ if restart, makeinstall(varargin{:}), end
 %@        if ~isunix
 %@           errcode=95.11;
 %@           %toolboxroot=fullfile(matlabroot,'toolbox');
-%@           toolboxroot=strtok(userpath,';');
+%@           if isoctave
+%@               toolboxroot=matlabroot;
+%@           else
+%@               toolboxroot=strtok(userpath,';');
+%@           end
 %@        else
 %@           errcode=95.12;
 %@           toolboxroot=startuppath;
@@ -1006,14 +1019,18 @@ if restart, makeinstall(varargin{:}), end
 %@  if isempty(i)
 %@     errcode=95;
 %@     startupfilestr = 'startup.m';
-%@     if isoctave startupfilestr = '~/.octaverc'; toolboxroot = '~/octave'; end
+%@     if isoctave startupfilestr = '~/.octaverc'; toolboxroot = pkg('prefix'); end
 %@     if exist(startupfilestr,'file')
 %@        errcode=95.1;
 %@     else
 %@        errcode=95.2;
 %@        if ~isunix
 %@           errcode=95.21;
-%@           toolboxroot=strtok(userpath,';');
+%@           if isoctave
+%@               toolboxroot=matlabroot;
+%@           else
+%@               toolboxroot=strtok(userpath,';');
+%@           end
 %@           err = 1;
 %@           if exist(toolboxroot,'file') ~= 7, err=mkdir(toolboxroot); end
 %@           if ~err | exist(toolboxroot,'file') ~= 7, error('Could not create toolbox path.'), end
@@ -1025,7 +1042,7 @@ if restart, makeinstall(varargin{:}), end
 %@           cd ~
 %@   	     startuppath=[pwd,filesep];
 %@           if isoctave
-%@              if exist('octave','file') ~= 7, mkdir octave, end
+%@              if exist(pkg('prefix'),'file') ~= 7, mkdir pkg('prefix'), end
 %@              cd octave
 %@  	          startupfile=[startuppath,'.octaverc'];
 %@           else
@@ -1111,7 +1128,11 @@ if restart, makeinstall(varargin{:}), end
 %@         startupfile = '~/.octaverc';
 %@     end
 %@     if ~isunix
-%@        toolboxroot=strtok(userpath,';');
+%@        if isoctave
+%@            toolboxroot=matlabroot;
+%@        else
+%@            toolboxroot=strtok(userpath,';');
+%@        end
 %@        %toolboxroot=fullfile(matlabroot,'toolbox');
 %@     else
 %@        toolboxroot=startuppath;
@@ -1262,7 +1283,7 @@ if restart, makeinstall(varargin{:}), end
 %@%%%%%%% write startup file
 %@  if startupPos
 %@    errcode=95.4;
-%@    if ~exist(startupfile,'var')
+%@    if ~exist('startupfile','var')
 %@        if isoctave
 %@            startupfile = '~/.octaverc';
 %@        else
