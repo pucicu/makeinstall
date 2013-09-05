@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.22  2013/09/02 07:33:02  marwan
+% octave compatibility for windows added
+%
 % Revision 3.21  2013/08/30 17:42:52  marwan
 % added octave compatibility (default path and .octaverc support)
 %
@@ -1716,4 +1719,17 @@ if restart, makeinstall(varargin{:}), end
 %@  end
 %@end
 %@
+%@function flag = isoctave
+%@% ISOCTAVE   Checks whether the code is running in Octave
+%@%   ISOCTAVE is returning the value TRUE if executed within the
+%@%   Octave environment, else it is returning FALSE (e.g. when
+%@%   called within Matlab.
+%@
+%@a = ver('Octave');
+%@
+%@if ~isempty(a) && strfind(a(1).Name,'Octave')
+%@    flag = true;
+%@else
+%@    flag = false;
+%@end
 %<-- ASCII ends here -->
