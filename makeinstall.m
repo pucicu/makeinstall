@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.23  2013/09/05 15:43:02  marwan
+% isoctave bug in deinstall script fixed
+%
 % Revision 3.22  2013/09/02 07:33:02  marwan
 % octave compatibility for windows added
 %
@@ -620,22 +623,30 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         filenames = strrep(filenames,filesep,'/');
         filenames = strrep(filenames,'./','');
 
-        % ignore CVS folders
+        % ignore CVS, svn and git folders
         remove = [];
         for i = 1:length(dirnames)
             test_string = fliplr(dirnames{i});
             if strcmpi(test_string(1:min([3,length(test_string)])),fliplr('CVS')), remove = [remove; i]; end
+            if strcmpi(test_string(1:min([4,length(test_string)])),fliplr('.git')), remove = [remove; i]; end
+            if strcmpi(test_string(1:min([4,length(test_string)])),fliplr('.svn')), remove = [remove; i]; end
+            if strcmpi(dirnames(1:min([4,length(dirnames)])),'.git'), remove = [remove; i]; end
         end
         dirnames(remove) = [];
 
 
-        % ignore makeinstall.rc, makeinstall.m and .cvsignore
+        % ignore makeinstall.rc, makeinstall.m, .cvsignore, and similar filesls
         i = 1;
         while i <= length(filenames)
             if strncmpi('p.',fliplr(filenames{i}),2), filenames(i) = []; i = i-1; end
             if strcmpi('makeinstall.rc',filenames{i}), filenames(i) = []; i = i-1; end
             if strcmpi('makeinstall.m',filenames{i}), filenames(i) = []; i = i-1; end
             if strcmpi('.cvsignore',filenames{i}), filenames(i) = []; i = i-1; end
+            if findstr('.git',filenames{i}), filenames(i) = []; i = i-1; end
+            if findstr('.svn',filenames{i}), filenames(i) = []; i = i-1; end
+            if findstr('.project',filenames{i}), filenames(i) = []; i = i-1; end
+            if findstr('.texlipse',filenames{i}), filenames(i) = []; i = i-1; end
+            if findstr('.DS_Store',filenames{i}), filenames(i) = []; i = i-1; end
             i = i+1;
         end
 
