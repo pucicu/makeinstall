@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.24  2013/11/04 21:02:54  marwan
+% ignore git files
+%
 % Revision 3.23  2013/09/05 15:43:02  marwan
 % isoctave bug in deinstall script fixed
 %
@@ -679,6 +682,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
                 c = [c, ['%<-- ASCII begins here: __',char(filenames{i}),'__ -->'], 10];
                 in = char(fread(fid)');
                 in = strrep(in,char(10),[char(10),'%@']);
+                in = strrep(in,char(13),[char(10),'%@']);
                 %      while 1
                 %         temp = fgetl(fid);
                 %         if ~ischar(temp), break
