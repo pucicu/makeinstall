@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.25  2013/11/06 09:24:34  marwan
+% DOS line endings <CR> changed to <NR> for Archive file
+%
 % Revision 3.24  2013/11/04 21:02:54  marwan
 % ignore git files
 %
@@ -1280,10 +1283,11 @@ if restart, makeinstall(varargin{:}), end
 %@            mkdir(i2)
 %@            errcode=97.7;
 %@            if ~strcmpi(i2,'private') & i2 ~= '@'
+%@                 % add entries in startup.m
 %@                 if isempty(startupPos) startupPos = '-end'; end
 %@                 loc = ['addpath ''',pwd, filesep, i2,''' ', startupPos];
 %@                 eval(loc);
-%@                 if ~ismember(loc, instpaths)
+%@                 if ~ismember(loc, instpaths) & startupPos
 %@                     instpaths{end+1} = loc;
 %@                 end
 %@            end
