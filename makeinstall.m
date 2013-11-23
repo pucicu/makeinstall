@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.26  2013/11/13 09:52:54  marwan
+% fix that startup.m entries were written although when "NO" was selected
+%
 % Revision 3.25  2013/11/06 09:24:34  marwan
 % DOS line endings <CR> changed to <NR> for Archive file
 %
@@ -177,7 +180,7 @@ olddir = pwd;
 toolbox_name = ''; install_file = ''; install_path = ''; deinstall_file = ''; src_dir = ''; 
 install_dirPC = ''; install_dirUNIX = ''; version_file = ''; version_number = ''; release = ''; 
 infostring = ''; old_dirs = ''; xml_name = ''; xml_start = ''; xml_demo = ''; xml_web = ''; restart = 0;
-count_warnings = 0;
+count_warnings = 0; include_pfiles = 0;
 max_warnings = 10; % more warnings than this number will be suppressed - feel free to change this number
 
 % read the resource file
@@ -269,6 +272,7 @@ bsdrc_file = [bsdrc_path, filesep, '.bsd.',filename];
 if ~exist(bsdrc_path,'dir')
     mkdir(strrep(which_res,[filename,'.m'],''),'private')
 end
+    
 if ~exist(bsdrc_file,'file') | strcmpi(varargin,'bsd')
     if ~exist(bsdrc_file,'file') 
         disp('First click on the license to accept them.')
@@ -322,6 +326,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         if isempty(install_dirUNIX), install_dirUNIX = install_dirPC; end
         if isempty(version_number), version_number = 'none'; end
         if isempty(release), release = ' '; end
+        if isempty(include_pfiles), include_pfiles = 0; end
         %  if isempty(infostring), infostring = ''; end
         old_dirs = lower(old_dirs);
         if ~iscell(old_dirs), old_dirs = cellstr(old_dirs); end
@@ -335,6 +340,9 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
 
         % make install file
         disp('   Reading the install source code')
+        if include_pfiles
+           disp('   ** Warning: p-files will be included!')
+        end
         fid = fopen(mi_file, 'r'); warning off
         i = 1; flag = 0;
         while 1
@@ -424,7 +432,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             fclose(fid);
         end
         if strcmpi(version_number,'none')
-            if max_warnings & count_warnings == max_warnings
+            if max_warnings && count_warnings == max_warnings
                 disp('   ** TOO MUCH WARNINGS!') 
                 disp('   I give up! Following warning messages will be suppressed.') 
             end
@@ -436,7 +444,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         else
             disp(['   Found version number ', version_number,''])
         end
-        if ~strcmpi(release,' ') & ~isempty(release)
+        if ~strcmpi(release,' ') && ~isempty(release)
             disp(['   Found release ', release,''])
         end
         if ~isempty(infostring)
@@ -446,7 +454,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         disp(['   Time stamp ', time_string,''])
 
         % make launch pad file
-        if ~exist(fullfile(src_dir,'info.xml'),'file') & ~isempty(xml_name) 
+        if ~exist(fullfile(src_dir,'info.xml'),'file') && ~isempty(xml_name) 
             disp('   Create info.xml')
             files.m(strcmpi(files.m,'info.xml')) = [];
             files.m(strcmpi(files.m,install_file)) = [];
@@ -509,7 +517,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
                 helptext = help(char(files.m{i}));
                 ind = findstr(char(10),helptext);
                 if isempty(ind)
-                    if max_warnings & count_warnings == max_warnings
+                    if max_warnings && count_warnings == max_warnings
                         disp('   ** TOO MUCH WARNINGS!') 
                         disp('   I give up! Following warning messages will be suppressed.') 
                     end
@@ -522,7 +530,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
                     [fnname,helpstring] = strtok(helpline(2:length(helpline)));
                     fnname = fliplr(deblank(fliplr(fnname)));
                     if ~strcmpi(fnname,strtok(char(files.m{i}),'.'))
-                        if max_warnings & count_warnings == max_warnings
+                        if max_warnings && count_warnings == max_warnings
                             disp('   ** TOO MUCH WARNINGS!') 
                             disp('   I give up! Following warning messages will be suppressed.') 
                         end
@@ -544,11 +552,11 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
                 gk_list = dir(['@', files.classes{i}]);
                 for j = 1:numel(gk_list)
                     gk_fname = gk_list(j).name;
-                    if ~gk_list(j).isdir %~strcmp(gk_fname, '.') & ~strcmp(gk_fname, '..')
+                    if ~gk_list(j).isdir %~strcmp(gk_fname, '.') && ~strcmp(gk_fname, '..')
                         helptext = help(fullfile(files.classes{i},gk_fname));
                         ind = findstr(char(10),helptext);
                         if isempty(ind)
-                            if max_warnings & count_warnings == max_warnings
+                            if max_warnings && count_warnings == max_warnings
                                 disp('   ** TOO MUCH WARNINGS!') 
                                 disp('   I give up! Following warning messages will be suppressed.') 
                             end
@@ -561,7 +569,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
                             [fnname,helpstring] = strtok(helpline(2:length(helpline)));
                             fnname = fliplr(deblank(fliplr(fnname)));
                             if ~strcmpi(fnname,strtok(char(gk_fname),'.'))
-                                if max_warnings & count_warnings == max_warnings
+                                if max_warnings && count_warnings == max_warnings
                                     disp('   ** TOO MUCH WARNINGS!') 
                                     disp('   I give up! Following warning messages will be suppressed.') 
                                 end
@@ -591,10 +599,10 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             end
             fclose(fid);
 
-            if length(contents) > 1 & isempty(findstr(lower(contents{2}),'version'))
+            if length(contents) > 1 && isempty(findstr(lower(contents{2}),'version'))
                 contents(3:end+1) = contents(2:end);
             end
-            if ~strcmp(release,' ') & ~isempty(release), release = [' (',release,') ']; end
+            if ~strcmp(release,' ') && ~isempty(release), release = [' (',release,') ']; end
             contents{2} = ['% Version ',version_number,release,date];
             if (isempty(contents{end}) | findstr(contents{end},'Modified at')>0); l = length(contents); else l = length(contents)+1; end
             contents{l} = ['% Modified at ',time_string,' by MAKEINSTALL'];
@@ -619,7 +627,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
                     x2 = dir(temp1);
                     for i = 1:length(x2)
                         if ~x2(i).isdir, filenames = [filenames; {[temp1,'/', x2(i).name]}]; end
-                        if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp = [temp,temp1,filesep,x2(i).name,':']; end
+                        if x2(i).isdir && ~strcmp(x2(i).name,'.') && ~strcmp(x2(i).name,'..'), temp = [temp,temp1,filesep,x2(i).name,':']; end
                     end
                 end
             end
@@ -644,7 +652,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         % ignore makeinstall.rc, makeinstall.m, .cvsignore, and similar filesls
         i = 1;
         while i <= length(filenames)
-            if strncmpi('p.',fliplr(filenames{i}),2), filenames(i) = []; i = i-1; end
+            if ~include_pfiles, if strncmpi('p.',fliplr(filenames{i}),2), filenames(i) = []; i = i-1; end, end
             if strcmpi('makeinstall.rc',filenames{i}), filenames(i) = []; i = i-1; end
             if strcmpi('makeinstall.m',filenames{i}), filenames(i) = []; i = i-1; end
             if strcmpi('.cvsignore',filenames{i}), filenames(i) = []; i = i-1; end
@@ -674,12 +682,12 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
 
             % ASCII data
             if ...
-                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'txt') | ...
-                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'xet') | ...
-                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'m') | ...
-                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'cr') | ...
-                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'lmx') | ...
-                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'lmth') | ...
+                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'txt') || ...
+                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'xet') || ...
+                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'m') || ...
+                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'cr') || ...
+                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'lmx') || ...
+                strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'lmth') || ...
                 strcmpi(lower(strtok(fliplr(filenames{i}),'.')),'mth')
 
                 c = [c, ['%<-- ASCII begins here: __',char(filenames{i}),'__ -->'], 10];
@@ -755,8 +763,9 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             fprintf(fid,'%s\n','old_dirs='''';                          % possible old (obsolete) toolbox folders');
             fprintf(fid,'%s\n','install_path='''';                      % the root folder where the toolbox folder will be located (default is $USER$/matlab or $MATLABROOT$/toolbox, or $USERS$/octave when installing for Octave)');
             fprintf(fid,'%s\n',['install_dirUNIX=''',toolbox_name,''';   % the folder where the toolbox files will be extracted (UNIX)']);
-            fprintf(fid,'%s\n','install_dirPC=install_dirUNIX;          % the folder where the toolbox files will be extracted (PC)');
-            fprintf(fid,'%s\n\n',['src_dir=''',pwd,'''; % folder with the origin toolbox']);
+            fprintf(fid,'%s\n','install_dirPC=install_dirUNIX;        % the folder where the toolbox files will be extracted (PC)');
+            fprintf(fid,'%s\n',['src_dir=''',pwd,''';  % folder with the origin toolbox']);
+            fprintf(fid,'%s\n\n','include_pfiles=0;                     % switch to ignore (=0) or include (=1) Matlab p-files');
             fprintf(fid,'%s\n','version_file='''';                      % include in this file a line like this: % $Revision$');
             fprintf(fid,'%s\n','version_number='''';                    % or put the version number in this variable');
             fprintf(fid,'%s\n','release='''';                           % the release number');
@@ -830,6 +839,7 @@ if restart, makeinstall(varargin{:}), end
 %@  disp('$lines$')
 %@  install_file=[mfilename,'.m'];
 %@  currentpath=pwd; time_stamp='time_stamp not yet obtained'; checksum='checksum not yet obtained';
+%@  fid = 0;
 %@  
 %@%%%%%%% read the archive
 %@%%%%%%% and look for checksum and date in archive
@@ -884,7 +894,7 @@ if restart, makeinstall(varargin{:}), end
 %@  p=path; i1=0;
 %@  rem_old = '';
 %@  
-%@  while any($check_for_old$>i1) & ~strcmpi('N',rem_old)
+%@  while any($check_for_old$>i1) && ~strcmpi('N',rem_old)
 %@    errcode=92;
 %@    i1=$check_for_old$;
 %@    if ~isempty(i1)
@@ -972,11 +982,12 @@ if restart, makeinstall(varargin{:}), end
 %@               x2=dir(temp1);
 %@               for i=1:length(x2)
 %@                 if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
-%@         	   if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
+%@         	   if x2(i).isdir && ~strcmp(x2(i).name,'.') && ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
 %@               end
 %@             end
 %@           end
 %@           errcode=93.2;
+%@           if isoctave, confirm_recursive_rmdir (false, 'local'); end
 %@           dirnames=strrep(dirnames,['.',filesep],'');
 %@           for i=1:length(dirnames),l(i)=length(dirnames{i}); end
 %@           [i i4]=sort(l);
@@ -985,12 +996,12 @@ if restart, makeinstall(varargin{:}), end
 %@           for i=1:length(dirnames)
 %@              if dirnames{i} == '.', continue, end
 %@              delete([dirnames{i}, filesep,'*']),
-%@              if exist('rmdir') == 5 & exist(dirnames{i}) == 7, rmdir(dirnames{i},'s'), else, delete(dirnames{i}), end
+%@              if exist('rmdir') == 5 && exist(dirnames{i}) == 7, rmdir(dirnames{i},'s'); else, delete(dirnames{i}), end
 %@              disp(['  Removing files in ',char(dirnames{i}),''])
 %@           end
 %@           errcode=93.4;
 %@           cd(currentpath)
-%@           if exist('rmdir') == 5 & exist(oldtoolboxpath) == 7, rmdir(oldtoolboxpath,'s'), else, delete(oldtoolboxpath), end
+%@           if exist('rmdir') == 5 && exist(oldtoolboxpath) == 7, rmdir(oldtoolboxpath,'s'); else, delete(oldtoolboxpath), end
 %@           errcode=93.5;
 %@           disp(['  Removing ',oldtoolboxpath,''])
 %@        end
@@ -1041,6 +1052,46 @@ if restart, makeinstall(varargin{:}), end
 %@     errcode=95;
 %@     startupfilestr = 'startup.m';
 %@     if isoctave startupfilestr = '~/.octaverc'; toolboxroot = pkg('prefix'); end
+%@
+%@     %% check whether the default toolbox path exists
+%@     err = 1;
+%@     if ~isunix
+%@           errcode=95.01;
+%@           if isoctave
+%@               toolboxroot=matlabroot;
+%@           else
+%@               toolboxroot=strtok(userpath,';');
+%@           end
+%@           if exist(toolboxroot,'file') ~= 7, err=mkdir(toolboxroot); end
+%@           cd(toolboxroot)
+%@           startupfile=fullfile(toolboxroot,'startup.m');
+%@           instpaths={''};
+%@     else
+%@           errcode=95.02;
+%@           cd ~
+%@           startuppath=[pwd,filesep];
+%@           if isoctave
+%@              status = fileattrib(pkg('prefix'));
+%@              result = stat(pkg('prefix'));
+%@              uid = geteuid;
+%@              if status && result.uid ~= uid
+%@                  disp(['  ** No writeable package folder found. Will define it as ~/octave.',10,'     If installation fails, you have to create it manually, set it by',10,'     calling ''pkg prefix ~/octave'' and re-run the installation!'])
+%@                  err=mkdir('~/octave');
+%@                  pkg prefix ~/octave;
+%@                  toolboxroot = pkg('prefix');
+%@              end
+%@
+%@              if exist(pkg('prefix'),'file') ~= 7, err=mkdir(pkg('prefix')); end
+%@              cd(pkg('prefix'))
+%@  	          startupfile=[startuppath,'.octaverc'];
+%@           else
+%@              if exist('matlab','file') ~= 7, err=mkdir('matlab'); end
+%@              cd matlab
+%@  	          startupfile=[pwd,'/startup.m'];
+%@           end
+%@     end
+%@     if ~err || exist(toolboxroot,'file') ~= 7, error('Could not create toolbox path. Please check whether you have write access or whether there is another file of such a name blocking the creation of the path.'), end
+%@           
 %@     if exist(startupfilestr,'file')
 %@        errcode=95.1;
 %@     else
@@ -1052,9 +1103,6 @@ if restart, makeinstall(varargin{:}), end
 %@           else
 %@               toolboxroot=strtok(userpath,';');
 %@           end
-%@           err = 1;
-%@           if exist(toolboxroot,'file') ~= 7, err=mkdir(toolboxroot); end
-%@           if ~err | exist(toolboxroot,'file') ~= 7, error('Could not create toolbox path.'), end
 %@           cd(toolboxroot)
 %@           startupfile=fullfile(toolboxroot,'startup.m');
 %@           instpaths={''};
@@ -1063,13 +1111,11 @@ if restart, makeinstall(varargin{:}), end
 %@           cd ~
 %@   	     startuppath=[pwd,filesep];
 %@           if isoctave
-%@              if exist(pkg('prefix'),'file') ~= 7, mkdir pkg('prefix'), end
-%@              cd octave
-%@  	          startupfile=[startuppath,'.octaverc'];
+%@              cd(pkg('prefix'))
+%@              startupfile=[startuppath,'.octaverc'];
 %@           else
-%@              if exist('matlab','file') ~= 7, mkdir matlab, end
 %@              cd matlab
-%@  	          startupfile=[startuppath,'startup.m'];
+%@              startupfile=[startuppath,'startup.m'];
 %@           end
 %@           
 %@  	     toolboxroot=startuppath;
@@ -1077,8 +1123,8 @@ if restart, makeinstall(varargin{:}), end
 %@        end
 %@     end
 %@    
-%@        errcode=95.23;
-%@        if ~isempty(install_path)
+%@     errcode=95.23;
+%@     if ~isempty(install_path)
 %@           switch ( exist(install_path,'dir') )
 %@              case 0
 %@                in = input(['> Create ', install_path, '? Y/N [Y]: '],'s');
@@ -1098,7 +1144,7 @@ if restart, makeinstall(varargin{:}), end
 %@              case 7
 %@                toolboxroot = install_path;
 %@           end
-%@        end
+%@     end
 %@
 %@     errcode=95.3;
 %@     TBfullpath=fullfile(toolboxroot,toolboxpath);
@@ -1108,28 +1154,28 @@ if restart, makeinstall(varargin{:}), end
 %@
 %@     isrelpath = findstr('./',TBfullpath);
 %@     isrelpathDos = findstr('.\',TBfullpath);
-%@     if ( ~isempty(isrelpath) & isrelpath == 1 ) | ( ~isempty(isrelpathDos) & isrelpathDos == 1 )
+%@     if ( ~isempty(isrelpath) && isrelpath == 1 ) || ( ~isempty(isrelpathDos) && isrelpathDos == 1 )
 %@         TBfullpath = fullfile(pwd, TBfullpath(3:end));
 %@     end
 %@
 %@     isrelpath = findstr('../',TBfullpath);
 %@     isrelpathDos = findstr('..\',TBfullpath);
-%@     if ( ~isempty(isrelpath) & isrelpath == 1 ) | ( ~isempty(isrelpathDos) & isrelpathDos == 1 )
+%@     if ( ~isempty(isrelpath) && isrelpath == 1 ) || ( ~isempty(isrelpathDos) && isrelpathDos == 1 )
 %@         TBfullpath = fullfile(pwd, TBfullpath(4:end));
 %@     end
 %@     
 %@
 %@%%%%%%% ask where to add entry in startup file
 %@
-%@     disp(['> In order to get permanent access, the toolbox should be added',10,'> to the end (default) or top (E) of your startup path.'])
-%@     in = input('> Add toolbox permanently into your startup path (highly recommended)? Y/T/N [Y]: ','s');
+%@     disp(['> In order to get permanent access, the toolbox should be added',10,'> to the top (default) or end (E) of your startup path.'])
+%@     in = input('> Add toolbox permanently into your startup path (highly recommended)? Y/E/N [Y]: ','s');
 %@     if isempty(in), in = 'Y'; end
 %@     if strcmpi('Y',in)
 %@       startupPos = '-begin';
-%@       disp('  Adding Toolbox at the end of the startup.m file')
-%@     elseif strcmpi('T',in)
-%@       startupPos = '-end';
 %@       disp('  Adding Toolbox at the top of the startup.m file')
+%@     elseif strcmpi('E',in)
+%@       startupPos = '-end';
+%@       disp('  Adding Toolbox at the end of the startup.m file')
 %@     end
 %@
 %@     if startupPos
@@ -1261,6 +1307,7 @@ if restart, makeinstall(varargin{:}), end
 %@  clear temp* i i1 i2 i3 i4 i5 i6 A B
 %@  
 %@  errcode='97.3';
+%@  if exist(TBfullpath,'dir') ~= 7, error(['Could not enter toolbox path',10,'  ', TBfullpath,10,'. Please check whether you have write access or whether there is another file of such a name blocking the creation of the path.']), end
 %@  cd(TBfullpath)
 %@  disp(['  Toolbox folder is ',TBfullpath,''])
 %@  
@@ -1269,10 +1316,10 @@ if restart, makeinstall(varargin{:}), end
 %@  for i=1:length(folder);
 %@     i1=folder{i}; i2='.'; olddir=pwd;
 %@     if exist([TBfullpath, filesep, i1],'file') ~= 7
-%@        while ~isempty(i2) & ~isempty(i1)
+%@        while ~isempty(i2) && ~isempty(i1)
 %@          cd(i2)
 %@          [i2 i1]=strtok(i1,'/');
-%@          if exist([pwd, filesep, i2],'file') ~= 7 & exist([pwd, filesep, i2],'file')
+%@          if exist([pwd, filesep, i2],'file') ~= 7 && exist([pwd, filesep, i2],'file')
 %@             disp(['  ** Warning: Found ', i2, ' will be overwritten.'])
 %@             errcode=['97.5',reshape(dec2hex(double(i2))',1,length(i2)*2)];
 %@             delete(i2)
@@ -1282,12 +1329,12 @@ if restart, makeinstall(varargin{:}), end
 %@            errcode=['97.6',reshape(dec2hex(double(i2))',1,length(i2)*2)];
 %@            mkdir(i2)
 %@            errcode=97.7;
-%@            if ~strcmpi(i2,'private') & i2 ~= '@'
+%@            if ~strcmpi(i2,'private') && any(i2 ~= '@')
 %@                 % add entries in startup.m
 %@                 if isempty(startupPos) startupPos = '-end'; end
 %@                 loc = ['addpath ''',pwd, filesep, i2,''' ', startupPos];
 %@                 eval(loc);
-%@                 if ~ismember(loc, instpaths) & startupPos
+%@                 if ~ismember(loc, instpaths) && startupPos
 %@                     instpaths{end+1} = loc;
 %@                 end
 %@            end
@@ -1319,7 +1366,8 @@ if restart, makeinstall(varargin{:}), end
 %@      disp('  ** Could not add toolbox into the startup.m file.');
 %@      disp('  ** Ensure that you have write access!');
 %@    else
-%@      for i2=1:length(instpaths), fprintf(fid,'%s\n', char(instpaths{i2})); disp(char(instpaths{i2}));end
+%@      %for i2=1:length(instpaths), fprintf(fid,'%s\n', char(instpaths{i2})); disp(char(instpaths{i2}));end
+%@      for i2=1:length(instpaths), fprintf(fid,'%s\n', char(instpaths{i2})); end
 %@      fclose(fid);
 %@    end
 %@  end
@@ -1346,11 +1394,11 @@ if restart, makeinstall(varargin{:}), end
 %@        release=str2double(v(findstr(v,'(R')+2:findstr(v,')')-1));
 %@        if release>12, area='toolbox'; icon_path='$toolbox/matlab/icons'; else area='matlab'; icon_path='$toolbox/matlab/general'; end
 %@        i3=findstr(c(i).data,'<matlabrelease>'); i4=findstr(c(i).data,'</matlabrelease>');
-%@        if ~isempty(i3) & i4>i3;
+%@        if ~isempty(i3) && i4>i3;
 %@          c(i).data=strrep(c(i).data,c(i).data(i3:i4-1),['<matlabrelease>',num2str(release)]);
 %@        end
 %@        i3=findstr(c(i).data,'<area>'); i4=findstr(c(i).data,'</area>');
-%@        if ~isempty(i3) & i4>i3;
+%@        if ~isempty(i3) && i4>i3;
 %@          c(i).data=strrep(c(i).data,c(i).data(i3:i4-1),['<area>',area]);
 %@        end
 %@        c(i).data=strrep(c(i).data,'<icon>$toolbox/matlab/general',['<icon>',icon_path]);
@@ -1365,7 +1413,7 @@ if restart, makeinstall(varargin{:}), end
 %@  for i=1:length(c),
 %@    try
 %@      [tPath tFile tExt]=fileparts(char(c(i).file));
-%@      if strcmpi(tExt,'.m') & ~strcmpi(tFile,'Readme') & ~strcmpi(tFile,'Contents')
+%@      if strcmpi(tExt,'.m') && ~strcmpi(tFile,'Readme') && ~strcmpi(tFile,'Contents')
 %@        if mislocked(char(c(i).file)), munlock(char(c(i).file)); clear(char(c(i).file)); end
 %@        disp(['  Pcode ',char(c(i).file),''])
 %@        if sum(c(i).file == '.') < 2
@@ -1396,8 +1444,8 @@ if restart, makeinstall(varargin{:}), end
 %@    end
 %@  end
 %@  tx=version; tx=strtok(tx,'.'); 
-%@  if str2double(tx)>=5 & exist('rehash','builtin'), rehash, end
-%@  if str2double(tx)>=6 & exist('rehash','builtin'), eval('rehash toolboxcache'), end
+%@  if str2double(tx)>=5 && exist('rehash','builtin'), rehash, end
+%@  if str2double(tx)>=6 && exist('rehash','builtin'), eval('rehash toolboxcache'), end
 %@  
 %@%%%%%%% removing installation file
 %@  errcode=99;
@@ -1443,11 +1491,11 @@ if restart, makeinstall(varargin{:}), end
 %@    checksum_test=findstr(x_lasterr,'The installation file is corrupt!');
 %@    if isempty(checksum_test),checksum_test=0; end
 %@    if ~checksum_test
-%@      fprintf(fid,'%s\n','This script is under development and your assistance is');
-%@      fprintf(fid,'%s\n','urgently welcome. Please inform the distributor of the');
-%@      fprintf(fid,'%s\n','toolbox, where the error occured and send us the following');
-%@      fprintf(fid,'%s\n','error report and the informations about the toolbox (distributor,');
-%@      fprintf(fid,'%s\n','name etc.). Provide a brief description of what you were');
+%@      fprintf(fid,'%s\n','A critical error has occurred. Please inform the distributor');
+%@      fprintf(fid,'%s\n','of the toolbox, where the error occured and send us the entire');
+%@      fprintf(fid,'%s\n','screen output of the installation, the following error');
+%@      fprintf(fid,'%s\n','report, and the informations about the toolbox (distributor,');
+%@      fprintf(fid,'%s\n','name, URL etc.). Provide a brief description of what you were');
 %@      fprintf(fid,'%s\n','doing when this problem occurred.');
 %@      fprintf(fid,'%s\n','E-mail or FAX this information to us at:');
 %@      fprintf(fid,'%s\n','    E-mail:  marwan@pik-potsdam.de');
@@ -1470,7 +1518,7 @@ if restart, makeinstall(varargin{:}), end
 %@        fprintf(fid,'%s\n',['Name',char(9),'Size',char(9),'Bytes',char(9),'Class']);
 %@        for j=1:length(z2);
 %@          fprintf(fid,'%s',[z2(j).name,char(9),num2str(z2(j).size),char(9),num2str(z2(j).bytes),char(9),z2(j).class]);
-%@          if ~strcmp(z2(j).class,'cell') & ~strcmp(z2(j).class,'struct')
+%@          if ~strcmp(z2(j).class,'cell') && ~strcmp(z2(j).class,'struct')
 %@            content=eval(z2(j).name);
 %@            try, content=mat2str(content(1:min([size(content,1),500]),1:min([size(content,2),500])));end
 %@            fprintf(fid,'\t%s',content(1:min([length(content),500])));
@@ -1521,11 +1569,11 @@ if restart, makeinstall(varargin{:}), end
 %@      disp(z_ferror);
 %@      disp(['   errorcode is ',num2str(errcode)]);
 %@      disp('----------------------------');
-%@      disp('   This script is under development and your assistance is ')
-%@      disp('   urgently welcome. Please inform the distributor of the')
-%@      disp('   toolbox, where the error occured and send us the error')
-%@      disp('   report and the informations about the toolbox (distributor,')
-%@      disp('   name etc.). For your convenience, this information has been')
+%@      disp('   A critical error has occurred. Please inform the distributor');
+%@      disp('   of the toolbox, where the error occured and send us the entire');
+%@      disp('   screen output of the installation, the error report report');
+%@      disp('   and the informations about the toolbox (distributor, name,');
+%@      disp('   URL etc.). For your convenience, this information has been')
 %@      disp('   recorded in: ')
 %@      disp(['   ',fullfile(currentpath,'install.log')]), disp(' ')
 %@      disp('   Provide a brief description of what you were doing when ')
@@ -1586,6 +1634,7 @@ if restart, makeinstall(varargin{:}), end
 %@  if isoctave
 %@      more off
 %@  end
+%@  fid = 0;
 %@  warning('off')
 %@  disp('$lines$')
 %@  disp('    REMOVING $toolboxname$    ')
@@ -1616,10 +1665,22 @@ if restart, makeinstall(varargin{:}), end
 %@               rmpath(rmtoolboxpath)
 %@               if i4>1, p(i4-1:i3)=''; else, p(i4:i3)=''; end
 %@               startup_exist = exist('startup','file');
+%@               if isoctave startup_exist = exist('~/.octaverc','file'); end
 %@               if startup_exist
 %@                    startupfile=which('startup');
 %@                    startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
-%@                    instpaths=textread(startupfile,'%[^\n]');
+%@                    if isoctave
+%@                        startuppath = '~/';
+%@                        startupfile = '~/.octaverc';
+%@                    end
+%@                    fid = fopen(startupfile,'r');
+%@                    k = 1;
+%@                    while 1
+%@                       tmp = fgetl(fid);
+%@                       if ~ischar(tmp), break, end
+%@                       instpaths{k} = tmp;
+%@                       k = k + 1;
+%@                    end
 %@                    k=1;
 %@                    while k <= length(instpaths)
 %@                        if ~isempty(findstr(rmtoolboxpath,instpaths{k}))
@@ -1630,7 +1691,7 @@ if restart, makeinstall(varargin{:}), end
 %@                    end
 %@                    fid=fopen(startupfile,'w');
 %@                    for i2=1:length(instpaths), 
-%@                        fprintf(fid,'%s\n', char(instpaths(i2,:))); 
+%@                        fprintf(fid,'%s\n', char(instpaths{i2})); 
 %@                    end
 %@                    fclose(fid);
 %@               end
@@ -1639,6 +1700,7 @@ if restart, makeinstall(varargin{:}), end
 %@       end
 %@%%%%%%% removing old paths
 %@        if exist(oldtoolboxpath,'dir') == 7
+%@           if isoctave, confirm_recursive_rmdir (false, 'local'); end
 %@           disp(['  Removing files in ',oldtoolboxpath,''])
 %@           cd(oldtoolboxpath)
 %@           dirnames='';filenames='';
@@ -1650,7 +1712,7 @@ if restart, makeinstall(varargin{:}), end
 %@                   x2=dir(temp1);
 %@                   for i=1:length(x2)
 %@                       if ~x2(i).isdir, filenames=[filenames; {[temp1,'/', x2(i).name]}]; end
-%@         	             if x2(i).isdir & ~strcmp(x2(i).name,'.') & ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
+%@         	             if x2(i).isdir && ~strcmp(x2(i).name,'.') && ~strcmp(x2(i).name,'..'), temp=[temp,temp1,filesep,x2(i).name,':']; end
 %@                   end
 %@               end
 %@           end
@@ -1661,19 +1723,19 @@ if restart, makeinstall(varargin{:}), end
 %@           dirnames=dirnames(flipud(i4));
 %@           for i=1:length(dirnames)
 %@              delete([dirnames{i}, filesep,'*'])
-%@              if exist('rmdir') == 5 & exist(dirnames{i}) == 7, rmdir(dirnames{i},'s'), else, delete(dirnames{i}), end
+%@              if exist('rmdir') == 5 && exist(dirnames{i}) == 7, rmdir(dirnames{i},'s'); else, delete(dirnames{i}), end
 %@              disp(['  Removing files in ',char(dirnames{i}),''])
 %@           end
 %@           if exist(currentpath), cd(currentpath), else, cd .., end
 %@           if strcmpi(currentpath,oldtoolboxpath), cd .., end
-%@           if exist('rmdir') == 5 & exist(oldtoolboxpath) == 7, rmdir(oldtoolboxpath,'s'), else, delete(oldtoolboxpath), end
+%@           if exist('rmdir') == 5 && exist(oldtoolboxpath) == 7, rmdir(oldtoolboxpath,'s'); else, delete(oldtoolboxpath), end
 %@           disp(['  Removing folder ',oldtoolboxpath,''])
 %@        end
 %@       disp(['  $toolboxname$ now removed.'])
 %@  else
 %@       disp(['  Nothing happened. Keep smiling.'])
 %@  end
-%@  tx=version; tx=strtok(tx,'.'); if str2double(tx)>=6 & exist('rehash','builtin'), rehash, end
+%@  tx=version; tx=strtok(tx,'.'); if str2double(tx)>=6 && exist('rehash','builtin'), rehash, end
 %@  warning on
 %@  if isoctave
 %@      more on
@@ -1691,11 +1753,11 @@ if restart, makeinstall(varargin{:}), end
 %@      z='File not found.'; 
 %@    end
 %@    fid=fopen('deinstall.log','w');
-%@    fprintf(fid,'%s\n','This script is under development and your assistance is');
-%@    fprintf(fid,'%s\n','urgently welcome. Please inform the distributor of the');
-%@    fprintf(fid,'%s\n','toolbox, where the error occured and send us the following');
-%@    fprintf(fid,'%s\n','error report and the informations about the toolbox (distributor,');
-%@    fprintf(fid,'%s\n','name etc.). Provide a brief description of what you were');
+%@    fprintf(fid,'%s\n','A critical error has occurred. Please inform the distributor');
+%@    fprintf(fid,'%s\n','of the toolbox, where the error occured and send us the entire');
+%@    fprintf(fid,'%s\n','screen output of the installation, the following error');
+%@    fprintf(fid,'%s\n','report, and the informations about the toolbox (distributor,');
+%@    fprintf(fid,'%s\n','name, URL etc.). Provide a brief description of what you were');
 %@    fprintf(fid,'%s\n','doing when this problem occurred.');
 %@    fprintf(fid,'%s\n','E-mail or FAX this information to us at:');
 %@    fprintf(fid,'%s\n','    E-mail:  marwan@pik-potsdam.de');
@@ -1717,11 +1779,11 @@ if restart, makeinstall(varargin{:}), end
 %@    disp(x);
 %@    disp(z);
 %@    disp('----------------------------');
-%@    disp('   This script is under development and your assistance is ')
-%@    disp('   urgently welcome. Please inform the distributor of the')
-%@    disp('   toolbox, where the error occured and send us the error')
-%@    disp('   report and the informations about the toolbox (distributor,')
-%@    disp('   name etc.). For your convenience, this information has been')
+%@    disp('   A critical error has occurred. Please inform the distributor');
+%@    disp('   of the toolbox, where the error occured and send us the entire');
+%@    disp('   screen output of the installation, the error report report');
+%@    disp('   and the informations about the toolbox (distributor, name,');
+%@    disp('   URL etc.). For your convenience, this information has been')
 %@    disp('   recorded in: ')
 %@    disp(['   ',fullfile(pwd,'deinstall.log')]), disp(' ')
 %@    disp('   Provide a brief description of what you were doing when ')
