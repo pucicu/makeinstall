@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.27  2013/11/23 20:45:12  marwan
+% fix a bug when pkg('prefix') in octave points to the system package path of Octave instead to the user pckage path
+%
 % Revision 3.26  2013/11/13 09:52:54  marwan
 % fix that startup.m entries were written although when "NO" was selected
 %
@@ -270,7 +273,7 @@ which_res = which([filename,'.m']);
 bsdrc_path = [strrep(which_res,[filename,'.m'],''), 'private'];
 bsdrc_file = [bsdrc_path, filesep, '.bsd.',filename];
 if ~exist(bsdrc_path,'dir')
-    mkdir(strrep(which_res,[filename,'.m'],''),'private')
+    mkdir(strrep(which_res,[filename,'.m'],''),'private');
 end
     
 if ~exist(bsdrc_file,'file') | strcmpi(varargin,'bsd')
@@ -692,6 +695,8 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
 
                 c = [c, ['%<-- ASCII begins here: __',char(filenames{i}),'__ -->'], 10];
                 in = char(fread(fid)');
+                in = strrep(in,[char(10),char(13)],char(10));
+                in = strrep(in,[char(13),char(10)],char(10));
                 in = strrep(in,char(10),[char(10),'%@']);
                 in = strrep(in,char(13),[char(10),'%@']);
                 %      while 1
@@ -914,15 +919,17 @@ if restart, makeinstall(varargin{:}), end
 %@%%%%%%% removing old entries in startup-file
 %@        errcode=94;
 %@        rmpath(oldtoolboxpath)
+%@        err = savepath;
+%@        if err, disp('  ** Warning: No write access to pathdef.m file!'), end
 %@        if i4>1, p(i4-1:i3)=''; else p(i4:i3)=''; end
 %@        startup_exist = exist('startup','file');
-%@        if isoctave startup_exist = exist('~/.octaverc','file'); end
+%@        if isoctave startup_exist = exist(fullfile('~','.octaverc'),'file'); end
 %@        if startup_exist
 %@             startupfile=which('startup');
 %@             startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
 %@             if isoctave
-%@                startuppath = '~/';
-%@                startupfile = '~/.octaverc';
+%@                startuppath = ['~',filesep];
+%@                startupfile = fullfile('~','.octaverc');
 %@             end
 %@             errcode=94.1;
 %@             if ~isunix
@@ -1016,14 +1023,14 @@ if restart, makeinstall(varargin{:}), end
 %@  i=findstr(toolboxpath,path);
 %@  startupPos = 0;
 %@  startup_exist = exist('startup','file');
-%@  if isoctave startup_exist = exist('~/.octaverc','file'); end
+%@  if isoctave startup_exist = exist(fullfile('~','.octaverc'),'file'); end
 %@  if startup_exist
 %@        errcode=95.1;
 %@        startupfile=which('startup');
 %@        startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
 %@        if isoctave
-%@           startuppath = '~/';
-%@           startupfile = '~/.octaverc';
+%@           startuppath = ['~',filesep];
+%@           startupfile = fullfile('~','.octaverc');
 %@        end
 %@  
 %@        if ~isunix
@@ -1051,7 +1058,7 @@ if restart, makeinstall(varargin{:}), end
 %@  if isempty(i)
 %@     errcode=95;
 %@     startupfilestr = 'startup.m';
-%@     if isoctave startupfilestr = '~/.octaverc'; toolboxroot = pkg('prefix'); end
+%@     if isoctave startupfilestr = fullfile('~','.octaverc'); toolboxroot = pkg('prefix'); end
 %@
 %@     %% check whether the default toolbox path exists
 %@     err = 1;
@@ -1065,6 +1072,7 @@ if restart, makeinstall(varargin{:}), end
 %@           if exist(toolboxroot,'file') ~= 7, err=mkdir(toolboxroot); end
 %@           cd(toolboxroot)
 %@           startupfile=fullfile(toolboxroot,'startup.m');
+%@           if isoctave, startupfile=fullfile('~','.octaverc');end
 %@           instpaths={''};
 %@     else
 %@           errcode=95.02;
@@ -1083,14 +1091,24 @@ if restart, makeinstall(varargin{:}), end
 %@
 %@              if exist(pkg('prefix'),'file') ~= 7, err=mkdir(pkg('prefix')); end
 %@              cd(pkg('prefix'))
-%@  	          startupfile=[startuppath,'.octaverc'];
+%@  	          startupfile=fullfile(startuppath,'.octaverc');
 %@           else
-%@              if exist('matlab','file') ~= 7, err=mkdir('matlab'); end
-%@              cd matlab
-%@  	          startupfile=[pwd,'/startup.m'];
+%@              up = textscan(userpath,'%s','delimiter',':'); up=up{1};
+%@              startuppath = '';
+%@              for k = 1:length(up)
+%@                  if exist(up{k},'file') == 7
+%@                      startuppath = up{k};
+%@                  end
+%@              end
+%@              if isempty(startuppath)
+%@                  err=mkdir(up{1});
+%@                  startuppath = up{1};
+%@              end
+%@              cd(startuppath)
+%@              startupfile=fullfile(startuppath,'startup.m');
 %@           end
 %@     end
-%@     if ~err || exist(toolboxroot,'file') ~= 7, error('Could not create toolbox path. Please check whether you have write access or whether there is another file of such a name blocking the creation of the path.'), end
+%@     if ~err, error('Could not create toolbox path. Please check whether you have write access or whether there is another file of such a name blocking the creation of the path.'), end
 %@           
 %@     if exist(startupfilestr,'file')
 %@        errcode=95.1;
@@ -1100,22 +1118,34 @@ if restart, makeinstall(varargin{:}), end
 %@           errcode=95.21;
 %@           if isoctave
 %@               toolboxroot=matlabroot;
+%@               startupfile=fullfile('~','.octaverc');
 %@           else
 %@               toolboxroot=strtok(userpath,';');
+%@               startupfile=fullfile(toolboxroot,'startup.m');
 %@           end
 %@           cd(toolboxroot)
-%@           startupfile=fullfile(toolboxroot,'startup.m');
 %@           instpaths={''};
 %@        else
 %@           errcode=95.22;
 %@           cd ~
-%@   	     startuppath=[pwd,filesep];
+%@           startuppath=[pwd,filesep];
 %@           if isoctave
 %@              cd(pkg('prefix'))
-%@              startupfile=[startuppath,'.octaverc'];
+%@              startupfile=fullfile(startuppath,'.octaverc');
 %@           else
-%@              cd matlab
-%@              startupfile=[startuppath,'startup.m'];
+%@              up = textscan(userpath,'%s','delimiter',':'); up=up{1};
+%@              startuppath = '';
+%@              for k = 1:length(up)
+%@                  if exist(up{k},'file') == 7
+%@                      startuppath = up{k};
+%@                  end
+%@              end
+%@              if isempty(startuppath)
+%@                  err=mkdir(up{1});
+%@                  startuppath = up{1};
+%@              end
+%@              cd(startuppath)
+%@              startupfile=fullfile(startuppath,'startup.m');
 %@           end
 %@           
 %@  	     toolboxroot=startuppath;
@@ -1191,8 +1221,8 @@ if restart, makeinstall(varargin{:}), end
 %@     startupfile=which('startup');
 %@     startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
 %@     if isoctave
-%@         startuppath = '~/';
-%@         startupfile = '~/.octaverc';
+%@         startuppath = ['~', filesep];
+%@         startupfile = fullfile('~','.octaverc');
 %@     end
 %@     if ~isunix
 %@        if isoctave
@@ -1318,23 +1348,24 @@ if restart, makeinstall(varargin{:}), end
 %@     if exist([TBfullpath, filesep, i1],'file') ~= 7
 %@        while ~isempty(i2) && ~isempty(i1)
 %@          cd(i2)
-%@          [i2 i1]=strtok(i1,'/');
+%@          [i2 i1]=strtok(i1,filesep);
 %@          if exist([pwd, filesep, i2],'file') ~= 7 && exist([pwd, filesep, i2],'file')
 %@             disp(['  ** Warning: Found ', i2, ' will be overwritten.'])
 %@             errcode=['97.5',reshape(dec2hex(double(i2))',1,length(i2)*2)];
 %@             delete(i2)
 %@          end
 %@          if ~exist([pwd, filesep, i2],'file')
-%@            disp(['  Make directory ',pwd, filesep, i2,''])
+%@            disp(['  Make directory ',pwd, filesep, i2])
 %@            errcode=['97.6',reshape(dec2hex(double(i2))',1,length(i2)*2)];
-%@            mkdir(i2)
+%@            err = mkdir(i2);
+%@            if err==0, disp(['  ** Warning: Could not create ',pwd, filesep, i2,'!',10,'     Installation will probably fail.']), end
 %@            errcode=97.7;
-%@            if ~strcmpi(i2,'private') && any(i2 ~= '@')
+%@            if ~(strcmpi(i2,'private') || strcmpi(i2(1),'+')) && any(i2 ~= '@')
 %@                 % add entries in startup.m
 %@                 if isempty(startupPos) startupPos = '-end'; end
 %@                 loc = ['addpath ''',pwd, filesep, i2,''' ', startupPos];
 %@                 eval(loc);
-%@                 if ~ismember(loc, instpaths) && startupPos
+%@                 if ~any(ismember(loc, instpaths)) && all(startupPos~=0)
 %@                     instpaths{end+1} = loc;
 %@                 end
 %@            end
@@ -1354,9 +1385,20 @@ if restart, makeinstall(varargin{:}), end
 %@    errcode=95.4;
 %@    if ~exist('startupfile','var')
 %@        if isoctave
-%@            startupfile = '~/.octaverc';
+%@            startupfile = fullfile('~','.octaverc');
 %@        else
-%@            startupfile = '~/matlab/startup.m';
+%@            up = textscan(userpath,'%s','delimiter',':'); up=up{1};
+%@            startuppath = '';
+%@            for k = 1:length(up)
+%@                if exist(up{k},'file') == 7
+%@                    startuppath = up{k};
+%@                end
+%@            end
+%@            if isempty(startuppath)
+%@                err=mkdir(up{1});
+%@                startuppath = up{1};
+%@            end
+%@            startupfile = fullfile(startuppath,'startup.m');
 %@        end
 %@    end
 %@
@@ -1377,10 +1419,10 @@ if restart, makeinstall(varargin{:}), end
 %@  errcode=98;
 %@  num_errors=0;
 %@  for i=1:length(c),
-%@    disp(['  Creating ',char(c(i).file),''])
+%@    disp(['  Creating ',char(c(i).file)])
 %@    fid=fopen(char(c(i).file),'w');
 %@    if fid < 0
-%@       disp('  ** Warning: Could not get access to ',char(c(i).file),'.');
+%@       disp(['  ** Warning: Could not get access to ',char(c(i).file),'.']);
 %@       disp('  ** Ensure that you have write access in this filesystem!');
 %@       num_errors=num_errors+1;
 %@       if num_errors == 2; 
@@ -1649,7 +1691,7 @@ if restart, makeinstall(varargin{:}), end
 %@  if strcmpi('Y',i)
 %@%%%%%%% check for entries in startup
 %@  
-%@        p=path; i1=0; i = '';
+%@        p=path; i1=0; i = ''; number_warnings_pathdef = 0;
 %@  
 %@        while findstr(upper('$toolboxdir$'),upper(p)) > i1
 %@           i1=findstr(upper('$toolboxdir$'),upper(p));
@@ -1663,15 +1705,17 @@ if restart, makeinstall(varargin{:}), end
 %@               rmtoolboxpath=p(i4:i3);
 %@%%%%%%% removing entry in startup-file
 %@               rmpath(rmtoolboxpath)
+%@               err = savepath;
+%@               if number_warnings_pathdef == 0 && err, disp('  ** Warning: No write access to pathdef.m file!'), number_warnings_pathdef = number_warnings_pathdef+1; end
 %@               if i4>1, p(i4-1:i3)=''; else, p(i4:i3)=''; end
 %@               startup_exist = exist('startup','file');
-%@               if isoctave startup_exist = exist('~/.octaverc','file'); end
+%@               if isoctave startup_exist = exist(fullfile('~','.octaverc'),'file'); end
 %@               if startup_exist
 %@                    startupfile=which('startup');
 %@                    startuppath=startupfile(1:findstr('startup.m',startupfile)-1);
 %@                    if isoctave
-%@                        startuppath = '~/';
-%@                        startupfile = '~/.octaverc';
+%@                        startuppath = ['~',filesep];
+%@                        startupfile = fullfile('~','.octaverc');
 %@                    end
 %@                    fid = fopen(startupfile,'r');
 %@                    k = 1;
