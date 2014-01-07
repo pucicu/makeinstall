@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.28  2013/11/25 20:05:41  marwan
+% bugfixes for MS Windows Octave
+%
 % Revision 3.27  2013/11/23 20:45:12  marwan
 % fix a bug when pkg('prefix') in octave points to the system package path of Octave instead to the user pckage path
 %
@@ -655,15 +658,16 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         % ignore makeinstall.rc, makeinstall.m, .cvsignore, and similar filesls
         i = 1;
         while i <= length(filenames)
+            if i < 1, i = 1; end
             if ~include_pfiles, if strncmpi('p.',fliplr(filenames{i}),2), filenames(i) = []; i = i-1; end, end
-            if strcmpi('makeinstall.rc',filenames{i}), filenames(i) = []; i = i-1; end
-            if strcmpi('makeinstall.m',filenames{i}), filenames(i) = []; i = i-1; end
-            if strcmpi('.cvsignore',filenames{i}), filenames(i) = []; i = i-1; end
-            if findstr('.git',filenames{i}), filenames(i) = []; i = i-1; end
-            if findstr('.svn',filenames{i}), filenames(i) = []; i = i-1; end
-            if findstr('.project',filenames{i}), filenames(i) = []; i = i-1; end
-            if findstr('.texlipse',filenames{i}), filenames(i) = []; i = i-1; end
-            if findstr('.DS_Store',filenames{i}), filenames(i) = []; i = i-1; end
+            if strcmpi('makeinstall.rc',filenames{i}), filenames(i) = []; i = i-1; continue, end
+            if strcmpi('makeinstall.m',filenames{i}), filenames(i) = []; i = i-1; continue, end
+            if strcmpi('.cvsignore',filenames{i}), filenames(i) = []; i = i-1; continue, end
+            if ~isempty(findstr('.git',filenames{i})), filenames(i) = []; i = i-1; continue, end
+            if ~isempty(findstr('.svn',filenames{i})),filenames(i) = []; i = i-1; continue, end
+            if ~isempty(findstr('.project',filenames{i})), filenames(i) = []; i = i-1; continue, end
+            if ~isempty(findstr('.texlipse',filenames{i})), filenames(i) = []; i = i-1; continue, end
+            if ~isempty(findstr('.DS_Store',filenames{i})), filenames(i) = []; i = i-1; continue, end
             i = i+1;
         end
 
