@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.29  2014/01/07 08:08:44  marwan
+% bug in ignoring files (.git*, .svn*, etc) fixed
+%
 % Revision 3.28  2013/11/25 20:05:41  marwan
 % bugfixes for MS Windows Octave
 %
@@ -1071,6 +1074,7 @@ if restart, makeinstall(varargin{:}), end
 %@           if isoctave
 %@               toolboxroot=matlabroot;
 %@           else
+%@               if isempty(userpath), userpath('reset'), end
 %@               toolboxroot=strtok(userpath,';');
 %@           end
 %@           if exist(toolboxroot,'file') ~= 7, err=mkdir(toolboxroot); end
@@ -1097,6 +1101,7 @@ if restart, makeinstall(varargin{:}), end
 %@              cd(pkg('prefix'))
 %@  	          startupfile=fullfile(startuppath,'.octaverc');
 %@           else
+%@              if isempty(userpath), userpath('reset'), end
 %@              up = textscan(userpath,'%s','delimiter',':'); up=up{1};
 %@              startuppath = '';
 %@              for k = 1:length(up)
