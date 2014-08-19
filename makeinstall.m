@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.31  2014/08/19 11:32:21  marwan
+% fid-bug in error handling fixed, extension of ignoring of further non-Matlab files
+%
 % Revision 3.30  2014/03/12 16:17:50  marwan
 % fix for rare cases when userpath variable is empty
 %
@@ -1377,7 +1380,8 @@ if restart, makeinstall(varargin{:}), end
 %@            err = mkdir(i2);
 %@            if err==0, disp(['  ** Warning: Could not create ',pwd, filesep, i2,'!',10,'     Installation will probably fail.']), end
 %@            errcode=97.7;
-%@            if ~(strcmpi(i2,'private') || strcmpi(i2(1),'+')) && any(i2 ~= '@')
+%@            temppath = strrep(pwd,TBfullpath,'');
+%@            if ~strcmpi(i2,'private') && all(i2 ~= '@') && all(i2 ~= '+') && all(temppath ~= '+')
 %@                 % add entries in startup.m
 %@                 if isempty(startupPos) startupPos = '-end'; end
 %@                 loc = ['addpath ''',pwd, filesep, i2,''' ', startupPos];
