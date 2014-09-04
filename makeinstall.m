@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.32  2014/08/19 19:47:58  marwan
+% avoid addpath of package directories (+folders)
+%
 % Revision 3.31  2014/08/19 11:32:21  marwan
 % fid-bug in error handling fixed, extension of ignoring of further non-Matlab files
 %
@@ -195,7 +198,7 @@ olddir = pwd;
 toolbox_name = ''; install_file = ''; install_path = ''; deinstall_file = ''; src_dir = ''; 
 install_dirPC = ''; install_dirUNIX = ''; version_file = ''; version_number = ''; release = ''; 
 infostring = ''; old_dirs = ''; xml_name = ''; xml_start = ''; xml_demo = ''; xml_web = ''; restart = 0;
-count_warnings = 0; include_pfiles = 0;
+count_warnings = 0; include_pfiles = 0; pc_only = 0;
 max_warnings = 10; % more warnings than this number will be suppressed - feel free to change this number
 fid = 0;
 
@@ -343,6 +346,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         if isempty(version_number), version_number = 'none'; end
         if isempty(release), release = ' '; end
         if isempty(include_pfiles), include_pfiles = 0; end
+        if isempty(pc_only), pc_only = 0; end
         %  if isempty(infostring), infostring = ''; end
         old_dirs = lower(old_dirs);
         if ~iscell(old_dirs), old_dirs = cellstr(old_dirs); end
@@ -390,6 +394,11 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
 	                     b(i) = strrep(b(i),'$generation_date$',time_string);
 	                     b(i) = strrep(b(i),'$check_for_old$',check_for_old);
 	                     b(i) = strrep(b(i),'$mi_version$',mi_version);
+	                     if pc_only
+                            b(i) = strrep(b(i),'$pc_only$','if ~ispc, error(''Sorry, this toolbox can be used only on a PC (Windows).''), end');
+	                     else
+                            b(i) = strrep(b(i),'$pc_only$','');
+                         end
 	                     if isempty(infostring)
 	                        b(i) = strrep(b(i),'$infostring$','');
 	                     else
@@ -786,8 +795,9 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             fprintf(fid,'%s\n','old_dirs='''';                          % possible old (obsolete) toolbox folders');
             fprintf(fid,'%s\n','install_path='''';                      % the root folder where the toolbox folder will be located (default is $USER$/matlab or $MATLABROOT$/toolbox, or $USERS$/octave when installing for Octave)');
             fprintf(fid,'%s\n',['install_dirUNIX=''',toolbox_name,''';   % the folder where the toolbox files will be extracted (UNIX)']);
-            fprintf(fid,'%s\n','install_dirPC=install_dirUNIX;        % the folder where the toolbox files will be extracted (PC)');
-            fprintf(fid,'%s\n',['src_dir=''',pwd,''';  % folder with the origin toolbox']);
+            fprintf(fid,'%s\n','install_dirPC=install_dirUNIX;          % the folder where the toolbox files will be extracted (PC)');
+            fprintf(fid,'%s\n',['src_dir=''',pwd,''';  % folder with the origin toolbox (optional, can be empty)']);
+            fprintf(fid,'%s\n\n','pc_only=0;                            % switch to 1 only if the toolbox is not working under Linux or Mac');
             fprintf(fid,'%s\n\n','include_pfiles=0;                     % switch to ignore (=0) or include (=1) Matlab p-files');
             fprintf(fid,'%s\n','version_file='''';                      % include in this file a line like this: % $Revision$');
             fprintf(fid,'%s\n','version_number='''';                    % or put the version number in this variable');
@@ -844,6 +854,8 @@ if restart, makeinstall(varargin{:}), end
 %@time_stamp='';checksum='';checksum_file=''; instpaths = '';
 %@errcode=0;
 %@
+%@  $pc_only$
+%@  
 %@try
 %@  warning('off')
 %@  if isoctave
