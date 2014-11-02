@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.33  2014/09/04 07:33:00  marwan
+% new feature: option for exclusive PC usage (toolbox will not work under other systems)
+%
 % Revision 3.32  2014/08/19 19:47:58  marwan
 % avoid addpath of package directories (+folders)
 %
@@ -440,21 +443,49 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         %  end
 
         % get version number
-        fid = fopen(version_file,'r');
-        if fid ~= -1
-            while 1
-                temp = fgetl(fid);
-                if ~ischar(temp), break
-                elseif ~isempty(temp)
-                    if temp(1) == '%'
-                        i = findstr(temp,'Version:');
-                        if ~isempty(i), version_number = temp(i(1)+9:end); break, end
-                        i = findstr(temp,'$Revision:');
-                        if ~isempty(i), version_number = strtok(temp(i(1)+11:end),'$'); break, end
-                    end
+        % - test if GIT (use latest tag)
+        if strcmpi(version_file,'git')
+            if exist('.git/refs/tags','dir') ~= 7
+                disp('   ** Warning: No GIT repository found!') 
+                count_warnings = count_warnings + 1;
+                version_number = 'none';
+            else
+                d_tags = dir('.git/refs/tags');
+                % remove '.' and '..'
+                i_remtags = cellfun(@(x)strcmp(x, '.'), {d_tags.name},'UniformOutput',false);
+                d_tags(find(cell2mat(i_remtags))) = [];
+                i_remtags = cellfun(@(x)strcmp(x, '..'), {d_tags.name},'UniformOutput',false);
+                d_tags(find(cell2mat(i_remtags))) = [];
+                % find max in datenum field (= youngest tag)
+                [dummy i_tag] = max([d_tags.datenum]);
+                if isempty(i_tag)
+                    disp('   ** Warning: No GIT tag found!') 
+                    count_warnings = count_warnings + 1;
+                    version_number = 'none';
+                else
+                    version_number = d_tags(i_tag).name;
+                    disp(['   Found GIT tag (used as version number) '])
                 end
             end
-            fclose(fid);
+        
+        else
+            % version number from CVS/SVN tag in specified file
+            fid = fopen(version_file,'r');
+            if fid ~= -1
+                while 1
+                    temp = fgetl(fid);
+                    if ~ischar(temp), break
+                    elseif ~isempty(temp)
+                        if temp(1) == '%'
+                            i = findstr(temp,'Version:');
+                            if ~isempty(i), version_number = temp(i(1)+9:end); break, end
+                            i = findstr(temp,'$Revision:');
+                            if ~isempty(i), version_number = strtok(temp(i(1)+11:end),'$'); break, end
+                        end
+                    end
+                end
+                fclose(fid);
+            end
         end
         if strcmpi(version_number,'none')
             if max_warnings && count_warnings == max_warnings
@@ -799,7 +830,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             fprintf(fid,'%s\n',['src_dir=''',pwd,''';  % folder with the origin toolbox (optional, can be empty)']);
             fprintf(fid,'%s\n\n','pc_only=0;                            % switch to 1 only if the toolbox is not working under Linux or Mac');
             fprintf(fid,'%s\n\n','include_pfiles=0;                     % switch to ignore (=0) or include (=1) Matlab p-files');
-            fprintf(fid,'%s\n','version_file='''';                      % include in this file a line like this: % $Revision$');
+            fprintf(fid,'%s\n','version_file='''';                      % there are two options: (1) include in the specified file a line like this (e.g. CVS or SVN like): % $Revision$; or (2) just write "git" here and the makeinstall will automatically use the latest GIT tag for the version number');
             fprintf(fid,'%s\n','version_number='''';                    % or put the version number in this variable');
             fprintf(fid,'%s\n','release='''';                           % the release number');
             fprintf(fid,'%s\n\n','infostring='''';                        % further information displayed during installation');
