@@ -51,7 +51,7 @@ function makeinstall(varargin)
 %   To view the text of this license, type
 %   MAKEINSTALL BSD.
 
-% Copyright (c) 2008-2012
+% Copyright (c) 2008-2015
 % Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany
 % http://www.pik-potsdam.de
 %
@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.34  2014/11/02 20:01:09  marwan
+% GIT tag support added (used for version number)
+%
 % Revision 3.33  2014/09/04 07:33:00  marwan
 % new feature: option for exclusive PC usage (toolbox will not work under other systems)
 %
@@ -1156,6 +1159,10 @@ if restart, makeinstall(varargin{:}), end
 %@  	          startupfile=fullfile(startuppath,'.octaverc');
 %@           else
 %@              if isempty(userpath), userpath('reset'), end
+%@              if isempty(userpath) % i.e. userpath reset failed
+%@                  if ~exist('matlab','dir'), mkdir('matlab'), end % we should be in the home folder
+%@                  userpath([pwd,'/matlab'])
+%@              end
 %@              up = textscan(userpath,'%s','delimiter',':'); up=up{1};
 %@              startuppath = '';
 %@              for k = 1:length(up)
