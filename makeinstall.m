@@ -51,7 +51,7 @@ function makeinstall(varargin)
 %   To view the text of this license, type
 %   MAKEINSTALL BSD.
 
-% Copyright (c) 2008-2015
+% Copyright (c) 2008-2018
 % Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany
 % http://www.pik-potsdam.de
 %
@@ -100,6 +100,9 @@ function makeinstall(varargin)
 % $Revision$
 %
 % $Log$
+% Revision 3.35  2015/07/09 16:18:06  marwan
+% problem of rare case of empty userpath variable (Linux) fixed
+%
 % Revision 3.34  2014/11/02 20:01:09  marwan
 % GIT tag support added (used for version number)
 %
@@ -199,7 +202,8 @@ function makeinstall(varargin)
 %
 
 % initialization some variables
-error(nargchk(0,1,nargin));
+narginchk(0,1)
+
 olddir = pwd;
 toolbox_name = ''; install_file = ''; install_path = ''; deinstall_file = ''; src_dir = ''; 
 install_dirPC = ''; install_dirUNIX = ''; version_file = ''; version_number = ''; release = ''; 
@@ -252,7 +256,7 @@ end
 filename = 'makeinstall';
 
 txt = {'';'BSD LICENSE';
-'';'Copyright (c) 2008-2012';
+'';'Copyright (c) 2008-2018';
 'Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany';
 'http://www.pik-potsdam.de';
 '';
@@ -721,6 +725,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             if ~isempty(findstr('.project',filenames{i})), filenames(i) = []; i = i-1; continue, end
             if ~isempty(findstr('.texlipse',filenames{i})), filenames(i) = []; i = i-1; continue, end
             if ~isempty(findstr('.DS_Store',filenames{i})), filenames(i) = []; i = i-1; continue, end
+            if ~isempty(findstr('.sync',filenames{i})), filenames(i) = []; i = i-1; continue, end
             i = i+1;
         end
 
@@ -871,7 +876,7 @@ if restart, makeinstall(varargin{:}), end
 %@%    the MAKEINSTALL tool. For further information
 %@%    visit http://matlab.pucicu.de
 %@
-%@% Copyright (c) 2008-2012
+%@% Copyright (c) 2008-2018
 %@% Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany
 %@% http://www.pik-potsdam.de
 %@%
@@ -1729,7 +1734,7 @@ if restart, makeinstall(varargin{:}), end
 %@%    the MAKEINSTALL tool. For further information
 %@%    visit http://matlab.pucicu.de
 %@
-%@% Copyright (c) 2008-2012
+%@% Copyright (c) 2008-2018
 %@% Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany
 %@% http://www.pik-potsdam.de
 %@%
