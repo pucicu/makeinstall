@@ -102,7 +102,7 @@ narginchk(0,1)
 olddir = pwd;
 toolbox_name = ''; install_file = ''; install_path = ''; deinstall_file = ''; src_dir = ''; 
 install_dirPC = ''; install_dirUNIX = ''; version_file = ''; version_number = ''; release = ''; 
-infostring = ''; old_dirs = ''; xml_name = ''; xml_start = ''; xml_demo = ''; xml_web = ''; restart = 0;
+infostring = ''; old_dirs = ''; ignore = ''; xml_name = ''; xml_start = ''; xml_demo = ''; xml_web = ''; restart = 0;
 count_warnings = 0; include_pfiles = 0; pc_only = 0;
 max_warnings = 10; % more warnings than this number will be suppressed - feel free to change this number
 fid = 0;
@@ -255,6 +255,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         %  if isempty(infostring), infostring = ''; end
         old_dirs = lower(old_dirs);
         if ~iscell(old_dirs), old_dirs = cellstr(old_dirs); end
+        if ~iscell(ignore), ignore = cellstr(ignore); end
         check_for_old = '[findstr([lower(toolboxpath),''demo''],lower(p))';
         check_for_old = [check_for_old,' findstr(lower(toolboxpath),lower(p))'];
         for i = 1:length(old_dirs)
@@ -469,7 +470,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             files.m(strcmpi(files.m,install_file)) = [];
             fid = fopen('Contents.m','w'); 
             fprintf(fid,'%s\n',['% ',toolbox_name]);
-            fprintf(fid,'%s\n',['% Version ',num2str(version_number),'   ',date]);
+            fprintf(fid,'%s\n',['% Version ',strrep(num2str(version_number),'v',''),'   ',date]);
             fprintf(fid,'%s\n','%');
             for i = 1:length(files.m)
                 helptext = help(char(files.m{i}));
@@ -561,7 +562,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
                 contents(3:end+1) = contents(2:end);
             end
             if ~strcmp(release,' ') && ~isempty(release), release = [' (',release,') ']; end
-            contents{2} = ['% Version ',version_number,release,date];
+            contents{2} = ['% Version ',strrep(version_number, 'v', ''),release,date];
             if (isempty(contents{end}) | findstr(contents{end},'Modified at')>0); l = length(contents); else l = length(contents)+1; end
             contents{l} = ['% Modified at ',time_string,' by MAKEINSTALL'];
 
@@ -598,29 +599,31 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         % ignore CVS, svn and git folders
         remove = [];
         for i = 1:length(dirnames)
-            test_string = fliplr(dirnames{i});
-            if strcmpi(test_string(1:min([3,length(test_string)])),fliplr('CVS')), remove = [remove; i]; end
-            if strcmpi(test_string(1:min([4,length(test_string)])),fliplr('.git')), remove = [remove; i]; end
-            if strcmpi(test_string(1:min([4,length(test_string)])),fliplr('.svn')), remove = [remove; i]; end
-            if strcmpi(dirnames(1:min([4,length(dirnames)])),'.git'), remove = [remove; i]; end
+            if length(dirnames{i}) > 4
+                test_string = fliplr(dirnames{i});
+                if strcmpi(test_string(1:min([3,length(test_string)])),fliplr('CVS')), remove = [remove; i]; end
+                if strcmpi(test_string(1:min([4,length(test_string)])),fliplr('.git')), remove = [remove; i]; end
+                if strcmpi(test_string(1:min([4,length(test_string)])),fliplr('.svn')), remove = [remove; i]; end
+                if strcmpi(dirnames{i}(1:min([3,length(dirnames)])),'CVS'), remove = [remove; i]; end
+                if strcmpi(dirnames{i}(1:min([4,length(dirnames)])),'.git'), remove = [remove; i]; end
+                if strcmpi(dirnames{i}(1:min([4,length(dirnames)])),'.svn'), remove = [remove; i]; end
+            end
         end
         dirnames(remove) = [];
 
 
-        % ignore makeinstall.rc, makeinstall.m, .cvsignore, and similar filesls
+        % ignore files specified by variable 'ignore' in makeinstall.rc and
+        % additionally ignore makeinstall.rc, makeinstall.m, .cvsignore, and similar files
         i = 1;
+        
+        ignore = [ignore, {'makeinstall.m'}, {'makeinstall.rc'}, {'.cvsignore'}, {'.git'}, {'.svn'}, {'.project'}, {'.texlipse'}, {'.sync'}, {'.DS_Store'}];
         while i <= length(filenames)
             if i < 1, i = 1; end
+            [~, curr_file] = fileparts(filenames(i));
             if ~include_pfiles, if strncmpi('p.',fliplr(filenames{i}),2), filenames(i) = []; i = i-1; end, end
-            if strcmpi('makeinstall.rc',filenames{i}), filenames(i) = []; i = i-1; continue, end
-            if strcmpi('makeinstall.m',filenames{i}), filenames(i) = []; i = i-1; continue, end
-            if strcmpi('.cvsignore',filenames{i}), filenames(i) = []; i = i-1; continue, end
-            if ~isempty(findstr('.git',filenames{i})), filenames(i) = []; i = i-1; continue, end
-            if ~isempty(findstr('.svn',filenames{i})),filenames(i) = []; i = i-1; continue, end
-            if ~isempty(findstr('.project',filenames{i})), filenames(i) = []; i = i-1; continue, end
-            if ~isempty(findstr('.texlipse',filenames{i})), filenames(i) = []; i = i-1; continue, end
-            if ~isempty(findstr('.DS_Store',filenames{i})), filenames(i) = []; i = i-1; continue, end
-            if ~isempty(findstr('.sync',filenames{i})), filenames(i) = []; i = i-1; continue, end
+            for j = 1:length(ignore)
+                if ~isempty(findstr(ignore{j},filenames{i})), filenames(i) = []; i = i-1; continue, end
+            end
             i = i+1;
         end
 
@@ -727,6 +730,7 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             fprintf(fid,'%s\n','install_file=''install.m'';             % name of the install script');
             fprintf(fid,'%s\n','deinstall_file=''tbclean.m'';           % name of the deinstall script');
             fprintf(fid,'%s\n','old_dirs='''';                          % possible old (obsolete) toolbox folders');
+            fprintf(fid,'%s\n','ignore='''';                            % files and folders to be ignored');
             fprintf(fid,'%s\n','install_path='''';                      % the root folder where the toolbox folder will be located (default is $USER$/matlab or $MATLABROOT$/toolbox, or $USERS$/octave when installing for Octave)');
             fprintf(fid,'%s\n',['install_dirUNIX=''',toolbox_name,''';   % the folder where the toolbox files will be extracted (UNIX)']);
             fprintf(fid,'%s\n','install_dirPC=install_dirUNIX;          % the folder where the toolbox files will be extracted (PC)');
