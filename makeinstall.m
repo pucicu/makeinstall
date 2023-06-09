@@ -51,9 +51,9 @@ function makeinstall(varargin)
 %   To view the text of this license, type
 %   MAKEINSTALL BSD.
 
-% Copyright (c) 2008-2018
+% Copyright (c) 2008-2023
 % Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany
-% http://www.pik-potsdam.de
+% https://tocsy.pik-potsdam.de/makeinstall.php
 %
 % Copyright (c) 2002-2008
 % Norbert Marwan, Potsdam University, Germany
@@ -95,111 +95,6 @@ function makeinstall(varargin)
 % (Universitatsklinikum) and Eduard vander Zwan (Wageningen 
 % Universiteit) for usefule hints and comments about the
 % root-folder of the toolbox and the startup.m entries.
-%
-% $Date$
-% $Revision$
-%
-% $Log$
-% Revision 3.35  2015/07/09 16:18:06  marwan
-% problem of rare case of empty userpath variable (Linux) fixed
-%
-% Revision 3.34  2014/11/02 20:01:09  marwan
-% GIT tag support added (used for version number)
-%
-% Revision 3.33  2014/09/04 07:33:00  marwan
-% new feature: option for exclusive PC usage (toolbox will not work under other systems)
-%
-% Revision 3.32  2014/08/19 19:47:58  marwan
-% avoid addpath of package directories (+folders)
-%
-% Revision 3.31  2014/08/19 11:32:21  marwan
-% fid-bug in error handling fixed, extension of ignoring of further non-Matlab files
-%
-% Revision 3.30  2014/03/12 16:17:50  marwan
-% fix for rare cases when userpath variable is empty
-%
-% Revision 3.29  2014/01/07 08:08:44  marwan
-% bug in ignoring files (.git*, .svn*, etc) fixed
-%
-% Revision 3.28  2013/11/25 20:05:41  marwan
-% bugfixes for MS Windows Octave
-%
-% Revision 3.27  2013/11/23 20:45:12  marwan
-% fix a bug when pkg('prefix') in octave points to the system package path of Octave instead to the user pckage path
-%
-% Revision 3.26  2013/11/13 09:52:54  marwan
-% fix that startup.m entries were written although when "NO" was selected
-%
-% Revision 3.25  2013/11/06 09:24:34  marwan
-% DOS line endings <CR> changed to <NR> for Archive file
-%
-% Revision 3.24  2013/11/04 21:02:54  marwan
-% ignore git files
-%
-% Revision 3.23  2013/09/05 15:43:02  marwan
-% isoctave bug in deinstall script fixed
-%
-% Revision 3.22  2013/09/02 07:33:02  marwan
-% octave compatibility for windows added
-%
-% Revision 3.21  2013/08/30 17:42:52  marwan
-% added octave compatibility (default path and .octaverc support)
-%
-% Revision 3.20  2012/04/07 12:47:22  marwan
-% changed to BSD license
-% added errorcode during deleting old toolbox
-% changed toolbox location from general Matlab folder to user's matlab folder in Windows
-%
-% Revision 3.19  2009/06/12 07:50:23  marwan
-% change from GPL to BSD License
-%
-% Revision 3.18  2009/03/24 09:19:58  marwan
-% updated contact data and copyright address
-%
-% Revision 3.17  2008/02/25 12:32:53  marwan
-% fixed checksum error on 64bit machines
-%
-% Revision 3.16  2006/11/07 07:55:43  marwan
-% several bug fixes and upwards compatibility
-%
-% Revision 3.15  2006/10/30 17:32:21  marwan
-% include subdirectories support
-%
-% Revision 3.14  2006/07/03 08:04:36  marwan
-% Checksum error bug in Matlab 2006a solved
-%
-% Revision 3.13  2006/03/17 08:31:01  marwan
-% code optimised and flattened
-%
-% Revision 3.12  2006/02/07 13:45:11  marwan
-% pcode bug resolved (R14 incompatibility)
-%
-% Revision 3.11  2005/08/23 07:21:21  marwan
-% fixed downwards compatibility of mfilename command
-%
-% Revision 3.10  2005/05/20 09:56:14  marwan
-% bug in relative-to-absolute-path conversion fixed
-% confusing of DOS and Unix fileseparators resolved
-% bug due to DOS line end (CR instead of LF) resolved
-% bug due to Makeinstall self packaging resolved (Makeinstall.m now excluded)
-%
-% Revision 3.9  2005/04/08 11:17:07  marwan
-% comment combination (for container) changed
-% small bugfixes, suggested by Gaetan Koers
-%
-% Revision 3.8  2005/02/22 12:27:14  marwan
-% windoof bug fixed (ocurred during removing of old toolbox)
-%
-% Revision 3.7  2004/11/15 10:09:49  marwan
-% change addpath -end to addpath -begin
-%
-% Revision 3.6  2004/11/10 07:52:15  marwan
-% CVS compatibility included
-%
-% Revision 3.5  2004/11/10 06:29:16  marwan
-% Initial commitment
-%
-%
 
 % initialization some variables
 narginchk(0,1)
