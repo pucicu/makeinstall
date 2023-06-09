@@ -151,9 +151,9 @@ end
 filename = 'makeinstall';
 
 txt = {'';'BSD LICENSE';
-'';'Copyright (c) 2008-2018';
+'';'Copyright (c) 2008-2023';
 'Norbert Marwan, Potsdam Institute for Climate Impact Research, Germany';
-'http://www.pik-potsdam.de';
+'https://tocsy.pik-potsdam.de';
 '';
 'Copyright (c) 2002-2008';
 'Norbert Marwan, Potsdam University, Germany';
@@ -172,21 +172,21 @@ txt = {'';'BSD LICENSE';
 '      copyright notice, this list of conditions and the following';
 '      disclaimer in the documentation and/or other materials provided';
 '      with the distribution.';
-'    * All advertising materials mentioning features or use of this ';
-'      software must display the following acknowledgement:';
-'      This product includes software developed by the University of';
-'      Potsdam, Germany, the Potsdam Institute for Climate Impact';
-'      Research (PIK), and its contributors.';
+'    * Neither the name of the copyright holder nor the names of its';
+'      contributors may be used to endorse or promote products derived';
+'      from this software without specific prior written permission.';
 '';
-'THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND';
-'CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,';
-'INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF';
-'MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE';
-'DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS';
-'BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,';
-'EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED';
-'TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,';
-'DATA, OR PROFITS; OR BUSINESS'
+'THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS';
+'“AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED';
+'TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR';
+'PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR';
+'CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,';
+'EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,';
+'PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;';
+'OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,';
+'WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR';
+'OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF';
+'ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.'
 };
 
 
