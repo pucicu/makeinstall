@@ -2,6 +2,7 @@ Makeinstall for MATLAB®
 =======================
 
 ![release](https://img.shields.io/github/v/release/pucicu/makeinstall)
+[![SWH](https://archive.softwareheritage.org/badge/origin/https://github.com/pucicu/makeinstall/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/pucicu/makeinstall)
 ![license](https://img.shields.io/github/license/pucicu/makeinstall)
 ![file size](https://img.shields.io/github/repo-size/pucicu/makeinstall)
 
