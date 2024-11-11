@@ -130,10 +130,9 @@ mi_file = which(mfilename);
 mi_version = 'none';
 fid = fopen(mi_file,'r');
 if fid ~= -1
-    while 1
+    while ~feof(fid)
         temp = fgetl(fid);
-        if ~ischar(temp), break
-        elseif ~isempty(temp)
+        if ~isempty(temp)
             if temp(1) == '%'
                 i = findstr(temp,'Version:');
                 if ~isempty(i), mi_version = temp(i(1)+9:end); break, end
@@ -235,9 +234,8 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
     fid = fopen(rc_file,'r');
     if fid > 0 % begin main part
         disp('   Reading the resource file')
-        while 1
+        while ~feof(fid)
             l = fgetl(fid);
-            if ~ischar(l), break, end
             if ~isempty(l), eval(l); end
         end
         fclose(fid);
@@ -271,9 +269,8 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
         end
         fid = fopen(mi_file, 'r'); warning off
         i = 1; flag = 0;
-        while 1
+        while ~feof(fid)
             temp = fgetl(fid);
-            if ~ischar(temp), break, end
             if length(temp) > 1
                 if strcmpi(temp,'%<-- ASCII begins here: install -->')
 	                eofbyte = ftell(fid);
@@ -375,10 +372,9 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             % version number from CVS/SVN tag in specified file
             fid = fopen(version_file,'r');
             if fid ~= -1
-                while 1
+                while ~feof(fid)
                     temp = fgetl(fid);
-                    if ~ischar(temp), break
-                    elseif ~isempty(temp)
+                    if ~isempty(temp)
                         if temp(1) == '%'
                             i = findstr(temp,'Version:');
                             if ~isempty(i), version_number = temp(i(1)+9:end); break, end
@@ -551,9 +547,8 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             % modify contents file
             disp('   Modify Contents.m')
             fid = fopen('Contents.m','r'); contents = ''; 
-            while 1
+            while ~feof(fid)
                 temp = fgetl(fid);
-                if ~ischar(temp), break, end
                 contents = [contents;{temp}];
             end
             fclose(fid);
@@ -561,8 +556,8 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             if length(contents) > 1 && isempty(findstr(lower(contents{2}),'version'))
                 contents(3:end+1) = contents(2:end);
             end
-            if ~strcmp(release,' ') && ~isempty(release), release = [' (',release,') ']; end
-            contents{2} = ['% Version ',strrep(version_number, 'v', ''),release,date];
+            if ~strcmp(release,' ') && ~isempty(release), crelease = [' (',release,') ']; end
+            contents{2} = ['% Version ',strrep(version_number, 'v', ''),crelease,date];
             if (isempty(contents{end}) | findstr(contents{end},'Modified at')>0); l = length(contents); else l = length(contents)+1; end
             contents{l} = ['% Modified at ',time_string,' by MAKEINSTALL'];
 
@@ -572,6 +567,35 @@ if isempty(varargin) | ~strcmpi(varargin,'bsd') % create install file if not the
             end
             fclose(fid);
         end
+
+
+        % Update CITATION.cff file if available
+        if exist(fullfile(src_dir,'CITATION.cff'),'file')
+            disp('   Modify CITATION.cff')
+            fid = fopen('CITATION.cff','r'); contents = {}; 
+            while ~feof(fid)
+                temp = fgetl(fid);
+                contents{end + 1} = temp;
+            end
+            fclose(fid);
+
+            % find cells with version and release date
+            matches_version = cellfun(@(x) strncmp(x, 'version:', length('version:')), contents);
+            matches_date = cellfun(@(x) strncmp(x, 'date-released:', length('date-released:')), contents);
+            index_version = find(matches_version);
+            index_date = find(matches_date);            
+
+            if ~strcmp(release,' ') && ~isempty(release), crelease = [' (',release,')']; end
+            contents{index_version} = ['version: ''',strrep(version_number, 'v', ''),crelease,''''];
+            contents{index_date} = ['date-released: ''',datestr(now,'YYYY-mm-dd'),''''];
+
+            fid = fopen('CITATION.cff','w'); 
+            for i = 1:length(contents)
+                fprintf(fid,'%s\n',contents{i});
+            end
+            fclose(fid);
+        end
+
 
 
         % find sub-directories
@@ -837,7 +861,7 @@ if restart, makeinstall(varargin{:}), end
 %@  fid=fopen(install_file,'r'); 
 %@  fseek(fid,0,'eof'); eofbyte=ftell(fid);
 %@  fseek(fid,$startbyte$,'bof'); % location where the container starts
-%@  while 1
+%@  while ~feof(fid)
 %@     temp=fgetl(fid);
 %@     startbyte=ftell(fid);
 %@     if length(temp)>1
@@ -929,9 +953,8 @@ if restart, makeinstall(varargin{:}), end
 %@             end
 %@             fid = fopen(startupfile,'r');
 %@             k = 1;
-%@             while 1
+%@             while ~feof(fid)
 %@                 tmp = fgetl(fid);
-%@                 if ~ischar(tmp), break, end
 %@                 instpaths{k} = tmp;
 %@                 k = k + 1;
 %@             end
@@ -1031,9 +1054,8 @@ if restart, makeinstall(varargin{:}), end
 %@        end
 %@        fid = fopen(startupfile,'r');
 %@        k = 1;
-%@        while 1
+%@        while ~feof(fid)
 %@            tmp = fgetl(fid);
-%@            if ~ischar(tmp), break, end
 %@            instpaths{k} = tmp;
 %@            k = k + 1;
 %@        end
@@ -1710,9 +1732,8 @@ if restart, makeinstall(varargin{:}), end
 %@                    end
 %@                    fid = fopen(startupfile,'r');
 %@                    k = 1;
-%@                    while 1
+%@                    while ~feof(fid)
 %@                       tmp = fgetl(fid);
-%@                       if ~ischar(tmp), break, end
 %@                       instpaths{k} = tmp;
 %@                       k = k + 1;
 %@                    end

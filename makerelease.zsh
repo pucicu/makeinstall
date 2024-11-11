@@ -2,7 +2,7 @@
 
 
 # Get a list of existing tags
-tags=$(git tag | sort -V)
+tags=$(git tag | sort -V | tail -n 3)
 
 previous_tag=v3.5
 
@@ -18,6 +18,7 @@ for tag in ${=tags}; do
   response=$(echo $response | jq -r ".message")
   if [[ "$response" != "Not Found" ]]; then
     echo "Release already exists for tag: $tag. Skipping..."
+    previous_tag=$tag
     continue
   fi
   
