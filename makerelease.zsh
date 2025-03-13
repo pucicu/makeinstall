@@ -1,10 +1,14 @@
 #!/bin/zsh
 
+# Get the repository name (user/repo) from the Git remote URL
+repo_url=$(git remote get-url origin)
+repo_name=$(basename $repo_url .git)
+user_name=$(echo $repo_url | sed -E 's/^git@github\.com:([^\/]+)\/.*/\1/')
 
 # Get a list of existing tags
 tags=$(git tag | sort -V | tail -n 3)
 
-previous_tag=v3.5
+previous_tag=$(echo "$tags" | tail -n 3 | head -n 1)
 
 # Loop through each tag and create a release
 for tag in ${=tags}; do
@@ -14,7 +18,7 @@ for tag in ${=tags}; do
   response=$(gh api \
   -H "Accept: application/vnd.github+json" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  /repos/pucicu/makeinstall/releases/tags/$tag)
+  /repos/$user_name/$repo_name/releases/tags/$tag)
   response=$(echo $response | jq -r ".message")
   if [[ "$response" != "Not Found" ]]; then
     echo "Release already exists for tag: $tag. Skipping..."
